@@ -12,7 +12,8 @@
 #define SOUND_VOLUME 48
 
 static struct MsgPort *g_audio_port;
-static struct IOAudio *g_audio_io;
+static struct IOAudio *g_audio_alloc_io;
+static struct IOAudio *g_audio_write_io;
 static BYTE *g_chip_data[SOUND_COUNT];
 static ULONG g_chip_len[SOUND_COUNT];
 static UBYTE g_audio_open;
@@ -63,7 +64,7 @@ static int copy_chip_samples(void)
 
 void sound_init(void)
 {
-    UBYTE channels[4] = { 1, 2, 4, 8 };
+    static UBYTE channels[4] = { 1, 2, 4, 8 };
 
     if (g_audio_open)
         return;
@@ -75,43 +76,56 @@ void sound_init(void)
         free_chip_samples();
         return;
     }
-    g_audio_io = (struct IOAudio *)CreateExtIO(g_audio_port, sizeof(struct IOAudio));
-    if (!g_audio_io) {
+    g_audio_alloc_io = (struct IOAudio *)CreateExtIO(g_audio_port, sizeof(struct IOAudio));
+    g_audio_write_io = (struct IOAudio *)CreateExtIO(g_audio_port, sizeof(struct IOAudio));
+    if (!g_audio_alloc_io || !g_audio_write_io) {
+        if (g_audio_write_io)
+            DeleteExtIO((struct IORequest *)g_audio_write_io);
+        if (g_audio_alloc_io)
+            DeleteExtIO((struct IORequest *)g_audio_alloc_io);
         DeletePort(g_audio_port);
+        g_audio_write_io = 0;
+        g_audio_alloc_io = 0;
         g_audio_port = 0;
         free_chip_samples();
         return;
     }
 
-    g_audio_io->ioa_Request.io_Message.mn_Node.ln_Pri = ADALLOC_MAXPREC;
-    g_audio_io->ioa_Data = channels;
-    g_audio_io->ioa_Length = sizeof(channels);
-    if (OpenDevice((STRPTR)AUDIONAME, 0, (struct IORequest *)g_audio_io, 0) != 0) {
-        DeleteExtIO((struct IORequest *)g_audio_io);
+    g_audio_alloc_io->ioa_Request.io_Message.mn_Node.ln_Pri = ADALLOC_MAXPREC;
+    g_audio_alloc_io->ioa_Data = channels;
+    g_audio_alloc_io->ioa_Length = sizeof(channels);
+    if (OpenDevice((STRPTR)AUDIONAME, 0, (struct IORequest *)g_audio_alloc_io, 0) != 0) {
+        DeleteExtIO((struct IORequest *)g_audio_write_io);
+        DeleteExtIO((struct IORequest *)g_audio_alloc_io);
         DeletePort(g_audio_port);
-        g_audio_io = 0;
+        g_audio_write_io = 0;
+        g_audio_alloc_io = 0;
         g_audio_port = 0;
         free_chip_samples();
         return;
     }
+    *g_audio_write_io = *g_audio_alloc_io;
     g_audio_open = 1;
     g_audio_busy = 0;
 }
 
 void sound_shutdown(void)
 {
-    if (g_audio_io) {
-        if (g_audio_open) {
-            if (g_audio_busy && !CheckIO((struct IORequest *)g_audio_io)) {
-                AbortIO((struct IORequest *)g_audio_io);
-                WaitIO((struct IORequest *)g_audio_io);
-            } else if (g_audio_busy) {
-                WaitIO((struct IORequest *)g_audio_io);
-            }
-            CloseDevice((struct IORequest *)g_audio_io);
+    if (g_audio_write_io) {
+        if (g_audio_busy && !CheckIO((struct IORequest *)g_audio_write_io)) {
+            AbortIO((struct IORequest *)g_audio_write_io);
+            WaitIO((struct IORequest *)g_audio_write_io);
+        } else if (g_audio_busy) {
+            WaitIO((struct IORequest *)g_audio_write_io);
         }
-        DeleteExtIO((struct IORequest *)g_audio_io);
-        g_audio_io = 0;
+        DeleteExtIO((struct IORequest *)g_audio_write_io);
+        g_audio_write_io = 0;
+    }
+    if (g_audio_alloc_io) {
+        if (g_audio_open)
+            CloseDevice((struct IORequest *)g_audio_alloc_io);
+        DeleteExtIO((struct IORequest *)g_audio_alloc_io);
+        g_audio_alloc_io = 0;
     }
     if (g_audio_port) {
         DeletePort(g_audio_port);
@@ -124,28 +138,28 @@ void sound_shutdown(void)
 
 void sound_play(int id)
 {
-    if (!g_audio_open || !g_audio_io)
+    if (!g_audio_open || !g_audio_write_io)
         return;
     if (id < 0 || id >= SOUND_COUNT || !g_chip_data[id])
         return;
 
     if (g_audio_busy) {
-        if (!CheckIO((struct IORequest *)g_audio_io)) {
-            AbortIO((struct IORequest *)g_audio_io);
-            WaitIO((struct IORequest *)g_audio_io);
+        if (!CheckIO((struct IORequest *)g_audio_write_io)) {
+            AbortIO((struct IORequest *)g_audio_write_io);
+            WaitIO((struct IORequest *)g_audio_write_io);
         } else {
-            WaitIO((struct IORequest *)g_audio_io);
+            WaitIO((struct IORequest *)g_audio_write_io);
         }
         g_audio_busy = 0;
     }
 
-    g_audio_io->ioa_Request.io_Command = CMD_WRITE;
-    g_audio_io->ioa_Request.io_Flags = ADIOF_PERVOL;
-    g_audio_io->ioa_Data = (UBYTE *)g_chip_data[id];
-    g_audio_io->ioa_Length = g_chip_len[id];
-    g_audio_io->ioa_Period = SOUND_PERIOD_8KHZ;
-    g_audio_io->ioa_Volume = SOUND_VOLUME;
-    g_audio_io->ioa_Cycles = 1;
-    SendIO((struct IORequest *)g_audio_io);
+    g_audio_write_io->ioa_Request.io_Command = CMD_WRITE;
+    g_audio_write_io->ioa_Request.io_Flags = ADIOF_PERVOL;
+    g_audio_write_io->ioa_Data = (UBYTE *)g_chip_data[id];
+    g_audio_write_io->ioa_Length = g_chip_len[id];
+    g_audio_write_io->ioa_Period = SOUND_PERIOD_8KHZ;
+    g_audio_write_io->ioa_Volume = SOUND_VOLUME;
+    g_audio_write_io->ioa_Cycles = 1;
+    SendIO((struct IORequest *)g_audio_write_io);
     g_audio_busy = 1;
 }
