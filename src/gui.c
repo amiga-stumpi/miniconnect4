@@ -131,6 +131,8 @@ int gui_open(struct MC4App *app)
     x = app->cfg.win_x; y = app->cfg.win_y; w = app->cfg.win_w; h = app->cfg.win_h;
     if (w < 300) w = 300;
     if (h < 220) h = 220;
+    if (w > 640) w = 640;
+    if (h > 480) h = 480;
 
     for (i = 0; i < 3; ++i) {
         nw.LeftEdge = i == 0 ? x : 0;
@@ -150,8 +152,8 @@ int gui_open(struct MC4App *app)
         nw.BitMap = 0;
         nw.MinWidth = 300;
         nw.MinHeight = 180;
-        nw.MaxWidth = -1;
-        nw.MaxHeight = -1;
+        nw.MaxWidth = 640;
+        nw.MaxHeight = 480;
         nw.Type = WBENCHSCREEN;
         app->win = OpenWindow(&nw);
         if (app->win)
