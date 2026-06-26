@@ -60,6 +60,64 @@ void gui_layout(struct MC4App *app)
     app->button_count = n;
 }
 
+static WORD abs_word(WORD v)
+{
+    return v < 0 ? (WORD)-v : v;
+}
+
+void gui_enforce_aspect(struct MC4App *app)
+{
+    WORD w;
+    WORD h;
+    WORD dw;
+    WORD dh;
+    WORD target_w;
+    WORD target_h;
+
+    if (!app->win)
+        return;
+
+    w = app->win->Width;
+    h = app->win->Height;
+    if (app->last_win_w == 0 || app->last_win_h == 0) {
+        app->last_win_w = w;
+        app->last_win_h = h;
+        return;
+    }
+
+    if (app->resize_lock) {
+        app->resize_lock = 0;
+        app->last_win_w = w;
+        app->last_win_h = h;
+        return;
+    }
+
+    dw = abs_word((WORD)(w - app->last_win_w));
+    dh = abs_word((WORD)(h - app->last_win_h));
+    target_w = w;
+    target_h = h;
+
+    if (dw >= dh)
+        target_h = (WORD)(((LONG)w * 220L + 195L) / 390L);
+    else
+        target_w = (WORD)(((LONG)h * 390L + 110L) / 220L);
+
+    if (target_w < 300)
+        target_w = 300;
+    if (target_h < 180)
+        target_h = 180;
+
+    if (target_w != w || target_h != h) {
+        app->resize_lock = 1;
+        SizeWindow(app->win, (WORD)(target_w - w), (WORD)(target_h - h));
+        app->last_win_w = target_w;
+        app->last_win_h = target_h;
+    } else {
+        app->last_win_w = w;
+        app->last_win_h = h;
+    }
+}
+
 int gui_open(struct MC4App *app)
 {
     struct NewWindow nw;
@@ -106,6 +164,8 @@ int gui_open(struct MC4App *app)
     app->screen = app->win->WScreen;
     gui_layout(app);
     gui_draw_all(app);
+    app->last_win_w = app->win->Width;
+    app->last_win_h = app->win->Height;
     return 1;
 }
 

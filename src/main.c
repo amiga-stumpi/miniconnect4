@@ -156,6 +156,7 @@ static void event_loop(struct MC4App *app)
             if (classv == IDCMP_CLOSEWINDOW) {
                 app->running = 0;
             } else if (classv == IDCMP_NEWSIZE) {
+                gui_enforce_aspect(app);
                 gui_layout(app);
                 gui_draw_all(app);
             } else if (classv == IDCMP_REFRESHWINDOW) {

@@ -83,6 +83,9 @@ struct MC4App {
     UBYTE chat_len;
     UBYTE running;
     UBYTE need_full_redraw;
+    UBYTE resize_lock;
+    WORD last_win_w;
+    WORD last_win_h;
     UBYTE net_mode;
     UBYTE net_state;
     UBYTE my_turn;
@@ -108,6 +111,7 @@ int gui_open(struct MC4App *app);
 void gui_close(struct MC4App *app);
 void gui_layout(struct MC4App *app);
 void gui_draw_all(struct MC4App *app);
+void gui_enforce_aspect(struct MC4App *app);
 void gui_draw_status(struct MC4App *app);
 void gui_draw_chat(struct MC4App *app);
 void gui_draw_cell(struct MC4App *app, int row, int col, UBYTE value);
