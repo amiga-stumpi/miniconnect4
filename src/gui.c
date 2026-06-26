@@ -5,24 +5,32 @@
 #include <string.h>
 #include "miniconnect4.h"
 
-static struct IntuiText txt_new = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"New Game", 0 };
-static struct IntuiText txt_quit = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Quit", 0 };
-static struct IntuiText txt_lobby = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Lobby", 0 };
-static struct IntuiText txt_disconnect = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Disconnect", 0 };
-static struct IntuiText txt_player_name = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Player Name...", 0 };
-static struct IntuiText txt_chat = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Toggle Chat", 0 };
-static struct IntuiText txt_colors = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Farben...", 0 };
-static struct IntuiText txt_human = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Mensch gegen Mensch", 0 };
-static struct IntuiText txt_ai_easy = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Computer Einfach", 0 };
-static struct IntuiText txt_ai_medium = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Computer Mittel", 0 };
-static struct IntuiText txt_ai_hard = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Computer Schwer", 0 };
-static struct IntuiText txt_info = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Info", 0 };
+static struct IntuiText txt_new = { 0, 1, JAM1, 0, 1, 0, 0, 0 };
+static struct IntuiText txt_quit = { 0, 1, JAM1, 0, 1, 0, 0, 0 };
+static struct IntuiText txt_lobby = { 0, 1, JAM1, 0, 1, 0, 0, 0 };
+static struct IntuiText txt_disconnect = { 0, 1, JAM1, 0, 1, 0, 0, 0 };
+static struct IntuiText txt_player_name = { 0, 1, JAM1, 0, 1, 0, 0, 0 };
+static struct IntuiText txt_chat = { 0, 1, JAM1, 0, 1, 0, 0, 0 };
+static struct IntuiText txt_colors = { 0, 1, JAM1, 0, 1, 0, 0, 0 };
+static struct IntuiText txt_human = { 0, 1, JAM1, 0, 1, 0, 0, 0 };
+static struct IntuiText txt_ai_easy = { 0, 1, JAM1, 0, 1, 0, 0, 0 };
+static struct IntuiText txt_ai_medium = { 0, 1, JAM1, 0, 1, 0, 0, 0 };
+static struct IntuiText txt_ai_hard = { 0, 1, JAM1, 0, 1, 0, 0, 0 };
+static struct IntuiText txt_language = { 0, 1, JAM1, 0, 1, 0, 0, 0 };
+static struct IntuiText txt_lang_en = { 0, 1, JAM1, 0, 1, 0, 0, 0 };
+static struct IntuiText txt_lang_de = { 0, 1, JAM1, 0, 1, 0, 0, 0 };
+static struct IntuiText txt_lang_pl = { 0, 1, JAM1, 0, 1, 0, 0, 0 };
+static struct IntuiText txt_info = { 0, 1, JAM1, 0, 1, 0, 0, 0 };
 
 static struct MenuItem item_project_quit = { 0, 0, 10, 92, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_quit, 0, 0, 0, 0 };
 static struct MenuItem item_project_new = { &item_project_quit, 0, 0, 92, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_new, 0, 0, 0, 0 };
 static struct MenuItem item_network_disconnect = { 0, 0, 10, 112, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_disconnect, 0, 0, 0, 0 };
 static struct MenuItem item_network_lobby = { &item_network_disconnect, 0, 0, 112, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_lobby, 0, 0, 0, 0 };
-static struct MenuItem item_options_ai_hard = { 0, 0, 60, 150, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_ai_hard, 0, 0, 0, 0 };
+static struct MenuItem item_lang_pl = { 0, 116, 20, 84, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_lang_pl, 0, 0, 0, 0 };
+static struct MenuItem item_lang_de = { &item_lang_pl, 116, 10, 84, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_lang_de, 0, 0, 0, 0 };
+static struct MenuItem item_lang_en = { &item_lang_de, 116, 0, 84, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_lang_en, 0, 0, 0, 0 };
+static struct MenuItem item_options_language = { 0, 0, 70, 150, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_language, 0, 0, &item_lang_en, 0 };
+static struct MenuItem item_options_ai_hard = { &item_options_language, 0, 60, 150, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_ai_hard, 0, 0, 0, 0 };
 static struct MenuItem item_options_ai_medium = { &item_options_ai_hard, 0, 50, 150, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_ai_medium, 0, 0, 0, 0 };
 static struct MenuItem item_options_ai_easy = { &item_options_ai_medium, 0, 40, 150, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_ai_easy, 0, 0, 0, 0 };
 static struct MenuItem item_options_human = { &item_options_ai_easy, 0, 30, 150, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_human, 0, 0, 0, 0 };
@@ -35,6 +43,37 @@ static struct Menu menu_help = { 0, 196, 0, 16, 10, MENUENABLED, (UBYTE *)"?", &
 static struct Menu menu_options = { &menu_help, 120, 0, 76, 10, MENUENABLED, (UBYTE *)"Options", &item_options_name, 0, 0, 0, 0 };
 static struct Menu menu_network = { &menu_options, 54, 0, 66, 10, MENUENABLED, (UBYTE *)"Network", &item_network_lobby, 0, 0, 0, 0 };
 static struct Menu menu_project = { &menu_network, 0, 0, 54, 10, MENUENABLED, (UBYTE *)"Project", &item_project_new, 0, 0, 0, 0 };
+
+void gui_refresh_menus(struct MC4App *app)
+{
+    if (!app->win)
+        return;
+    ClearMenuStrip(app->win);
+    SetMenuStrip(app->win, &menu_project);
+}
+
+void gui_apply_language(struct MC4App *app)
+{
+    txt_new.IText = (UBYTE *)tr(&app->cfg, MC4_TX_NEW_GAME);
+    txt_quit.IText = (UBYTE *)tr(&app->cfg, MC4_TX_QUIT);
+    txt_lobby.IText = (UBYTE *)tr(&app->cfg, MC4_TX_LOBBY);
+    txt_disconnect.IText = (UBYTE *)tr(&app->cfg, MC4_TX_DISCONNECT);
+    txt_player_name.IText = (UBYTE *)tr(&app->cfg, MC4_TX_PLAYER_NAME);
+    txt_chat.IText = (UBYTE *)tr(&app->cfg, MC4_TX_TOGGLE_CHAT);
+    txt_colors.IText = (UBYTE *)tr(&app->cfg, MC4_TX_COLORS);
+    txt_human.IText = (UBYTE *)tr(&app->cfg, MC4_TX_HUMAN);
+    txt_ai_easy.IText = (UBYTE *)tr(&app->cfg, MC4_TX_AI_EASY);
+    txt_ai_medium.IText = (UBYTE *)tr(&app->cfg, MC4_TX_AI_MEDIUM);
+    txt_ai_hard.IText = (UBYTE *)tr(&app->cfg, MC4_TX_AI_HARD);
+    txt_language.IText = (UBYTE *)tr(&app->cfg, MC4_TX_LANGUAGE);
+    txt_lang_en.IText = (UBYTE *)tr(&app->cfg, MC4_TX_ENGLISH);
+    txt_lang_de.IText = (UBYTE *)tr(&app->cfg, MC4_TX_GERMAN);
+    txt_lang_pl.IText = (UBYTE *)tr(&app->cfg, MC4_TX_POLISH);
+    txt_info.IText = (UBYTE *)tr(&app->cfg, MC4_TX_INFO);
+    menu_project.MenuName = (UBYTE *)tr(&app->cfg, MC4_TX_PROJECT);
+    menu_network.MenuName = (UBYTE *)tr(&app->cfg, MC4_TX_NETWORK);
+    menu_options.MenuName = (UBYTE *)tr(&app->cfg, MC4_TX_OPTIONS);
+}
 
 void gui_layout(struct MC4App *app)
 {
@@ -122,6 +161,7 @@ int gui_open(struct MC4App *app)
         return 0;
     app->rp = app->win->RPort;
     app->screen = app->win->WScreen;
+    gui_apply_language(app);
     SetMenuStrip(app->win, &menu_project);
     gui_layout(app);
     gui_draw_all(app);
@@ -232,12 +272,17 @@ static int bg_conflict(struct MC4Config *cfg, UBYTE pen)
 
 static void draw_color_window(struct Window *w, struct MC4Config *cfg)
 {
-    static const char *names[5] = { "Hintergrund", "Schrift", "Spielfeld", "Chip 1", "Chip 2" };
+    const char *names[5];
     UBYTE vals[5];
     char n[8];
     int i;
     WORD y;
 
+    names[0] = tr(cfg, MC4_TX_COLOR_BG);
+    names[1] = tr(cfg, MC4_TX_COLOR_TEXT);
+    names[2] = tr(cfg, MC4_TX_COLOR_BOARD);
+    names[3] = tr(cfg, MC4_TX_CHIP1);
+    names[4] = tr(cfg, MC4_TX_CHIP2);
     vals[0] = cfg->pen_bg;
     vals[1] = cfg->pen_text;
     vals[2] = cfg->pen_board;
@@ -246,7 +291,7 @@ static void draw_color_window(struct Window *w, struct MC4Config *cfg)
 
     SetAPen(w->RPort, 0);
     RectFill(w->RPort, 0, 0, w->Width - 1, w->Height - 1);
-    gui_text(w->RPort, 12, 16, "Farben");
+    gui_text(w->RPort, 12, 16, tr(cfg, MC4_TX_COLORS));
     for (i = 0; i < 5; ++i) {
         y = (WORD)(34 + i * 22);
         gui_text(w->RPort, 12, y, names[i]);
@@ -260,7 +305,7 @@ static void draw_color_window(struct Window *w, struct MC4Config *cfg)
         gui_box(w->RPort, 204, y - 11, 224, y + 5);
         gui_text(w->RPort, 211, y, "+");
     }
-    gui_text(w->RPort, 12, 154, "Hintergrund darf nicht gleich sein.");
+    gui_text(w->RPort, 12, 154, tr(cfg, MC4_TX_BG_RULE));
 }
 
 static UBYTE next_color_value(struct MC4Config *cfg, int index, int dir, UBYTE max_pen)
@@ -323,7 +368,7 @@ void gui_edit_colors(struct MC4App *app)
     nw.BlockPen = 1;
     nw.IDCMPFlags = IDCMP_CLOSEWINDOW | IDCMP_MOUSEBUTTONS | IDCMP_REFRESHWINDOW;
     nw.Flags = WFLG_CLOSEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_SMART_REFRESH | WFLG_ACTIVATE | WFLG_GIMMEZEROZERO;
-    nw.Title = (UBYTE *)"Farben";
+    nw.Title = (UBYTE *)tr(&app->cfg, MC4_TX_COLORS);
     nw.Type = WBENCHSCREEN;
     nw.MinWidth = 250;
     nw.MinHeight = 172;
@@ -332,7 +377,7 @@ void gui_edit_colors(struct MC4App *app)
 
     w = OpenWindow(&nw);
     if (!w) {
-        gui_set_status(app, "Farben Fenster fehlgeschlagen");
+        gui_set_status(app, tr(&app->cfg, MC4_TX_COLOR_WINDOW_FAILED));
         return;
     }
     draw_color_window(w, &app->cfg);
@@ -402,7 +447,7 @@ void gui_edit_player_name(struct MC4App *app)
     ok_text.IText = (UBYTE *)"OK"; ok_text.NextText = 0;
     cancel_text.FrontPen = 1; cancel_text.BackPen = 0; cancel_text.DrawMode = JAM1;
     cancel_text.LeftEdge = 8; cancel_text.TopEdge = 4; cancel_text.ITextFont = 0;
-    cancel_text.IText = (UBYTE *)"Cancel"; cancel_text.NextText = 0;
+    cancel_text.IText = (UBYTE *)tr(&app->cfg, MC4_TX_CANCEL); cancel_text.NextText = 0;
 
     memset(&name_gad, 0, sizeof(name_gad));
     memset(&ok_gad, 0, sizeof(ok_gad));
@@ -442,7 +487,7 @@ void gui_edit_player_name(struct MC4App *app)
     nw.Flags = WFLG_CLOSEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_SMART_REFRESH | WFLG_ACTIVATE | WFLG_GIMMEZEROZERO;
     nw.FirstGadget = &name_gad;
     nw.CheckMark = 0;
-    nw.Title = (UBYTE *)"Player Name";
+    nw.Title = (UBYTE *)tr(&app->cfg, MC4_TX_PLAYER_NAME);
     nw.Screen = 0;
     nw.BitMap = 0;
     nw.MinWidth = 240;
@@ -453,13 +498,13 @@ void gui_edit_player_name(struct MC4App *app)
 
     w = OpenWindow(&nw);
     if (!w) {
-        gui_set_status(app, "Name window failed");
+        gui_set_status(app, tr(&app->cfg, MC4_TX_NAME_WINDOW_FAILED));
         return;
     }
 
     SetAPen(w->RPort, 0);
     RectFill(w->RPort, 0, 0, w->Width - 1, w->Height - 1);
-    gui_text(w->RPort, 16, 24, "Name:");
+    gui_text(w->RPort, 16, 24, tr(&app->cfg, MC4_TX_NAME_LABEL));
     gui_box(w->RPort, 14, 30, 226, 46);
     gui_box(w->RPort, 42, 58, 94, 74);
     gui_box(w->RPort, 122, 58, 198, 74);
@@ -494,7 +539,7 @@ void gui_edit_player_name(struct MC4App *app)
             config_make_default_name(buf, sizeof(buf));
         util_copy(app->cfg.player_name, sizeof(app->cfg.player_name), buf);
         config_save(&app->cfg);
-        gui_set_status(app, "Player name saved");
+        gui_set_status(app, tr(&app->cfg, MC4_TX_NAME_SAVED));
     }
     CloseWindow(w);
 }
@@ -506,9 +551,9 @@ int gui_confirm_invite(struct MC4App *app, const char *name)
     struct IntuiText no;
     char text[96];
 
-    util_copy(text, sizeof(text), "Anfrage von ");
+    util_copy(text, sizeof(text), tr(&app->cfg, MC4_TX_INVITE_FROM));
     util_append(text, sizeof(text), name);
-    util_append(text, sizeof(text), " annehmen?");
+    util_append(text, sizeof(text), tr(&app->cfg, MC4_TX_ACCEPT_INVITE));
 
     body.FrontPen = 1; body.BackPen = 0; body.DrawMode = JAM1;
     body.LeftEdge = 8; body.TopEdge = 8; body.ITextFont = 0;
@@ -516,11 +561,11 @@ int gui_confirm_invite(struct MC4App *app, const char *name)
 
     yes.FrontPen = 1; yes.BackPen = 0; yes.DrawMode = JAM1;
     yes.LeftEdge = 6; yes.TopEdge = 3; yes.ITextFont = 0;
-    yes.IText = (UBYTE *)"Annehmen"; yes.NextText = 0;
+    yes.IText = (UBYTE *)tr(&app->cfg, MC4_TX_ACCEPT); yes.NextText = 0;
 
     no.FrontPen = 1; no.BackPen = 0; no.DrawMode = JAM1;
     no.LeftEdge = 6; no.TopEdge = 3; no.ITextFont = 0;
-    no.IText = (UBYTE *)"Ablehnen"; no.NextText = 0;
+    no.IText = (UBYTE *)tr(&app->cfg, MC4_TX_DECLINE); no.NextText = 0;
 
     return AutoRequest(app->win, &body, &yes, &no, 0, 0, 260, 70) ? 1 : 0;
 }
@@ -536,7 +581,7 @@ void gui_info(struct MC4App *app)
     body.LeftEdge = 8;
     body.TopEdge = 8;
     body.ITextFont = 0;
-    body.IText = (UBYTE *)"MiniConnect4\nOnline Connect Four for AmigaOS 1.3\nMarcel Jaehne (c)2026";
+    body.IText = (UBYTE *)tr(&app->cfg, MC4_TX_ABOUT_TEXT);
     body.NextText = 0;
 
     ok.FrontPen = 1;

@@ -54,11 +54,11 @@ void protocol_handle_line(struct MC4App *app, const char *line)
 
     if (util_starts(line, "HELLO ")) {
         gui_add_chat(app, line + 6);
-        gui_set_status(app, "Connected");
+        gui_set_status(app, tr(&app->cfg, MC4_TX_CONNECTED));
         return;
     }
     if (util_starts(line, "NAMETAKEN ")) {
-        gui_set_status(app, "Name in use - choose another");
+        gui_set_status(app, tr(&app->cfg, MC4_TX_NAME_IN_USE));
         net_close(app);
         gui_edit_player_name(app);
         return;
@@ -73,15 +73,15 @@ void protocol_handle_line(struct MC4App *app, const char *line)
     }
     if (util_starts(line, "INVITE ")) {
         sound_play(MC4_SOUND_INVITE);
-        util_copy(msg, sizeof(msg), "Anfrage von ");
+        util_copy(msg, sizeof(msg), tr(&app->cfg, MC4_TX_INVITE_FROM));
         util_append(msg, sizeof(msg), line + 7);
         gui_add_chat(app, msg);
         if (gui_confirm_invite(app, line + 7)) {
             net_send_accept(app, line + 7);
-            gui_set_status(app, "Anfrage angenommen");
+            gui_set_status(app, tr(&app->cfg, MC4_TX_ACCEPTED));
         } else {
             net_send_decline(app, line + 7);
-            gui_set_status(app, "Anfrage abgelehnt");
+            gui_set_status(app, tr(&app->cfg, MC4_TX_DECLINED));
         }
         return;
     }
@@ -90,9 +90,9 @@ void protocol_handle_line(struct MC4App *app, const char *line)
         app->invite_wait_ticks = 0;
         app->invite_name[0] = 0;
         util_copy(msg, sizeof(msg), line + 9);
-        util_append(msg, sizeof(msg), " hat abgelehnt");
+        util_append(msg, sizeof(msg), tr(&app->cfg, MC4_TX_DECLINED_SUFFIX));
         gui_add_chat(app, msg);
-        gui_set_status(app, "Anfrage abgelehnt");
+        gui_set_status(app, tr(&app->cfg, MC4_TX_DECLINED));
         return;
     }
     if (util_starts(line, "INVITEFAILED ")) {
@@ -125,11 +125,11 @@ void protocol_handle_line(struct MC4App *app, const char *line)
         if (util_starts(role, "P1")) {
             app->game.local_player = MC4_P1;
             app->my_turn = 1;
-            gui_set_status(app, "Game started: your turn");
+            gui_set_status(app, tr(&app->cfg, MC4_TX_GAME_STARTED_YOUR));
         } else {
             app->game.local_player = MC4_P2;
             app->my_turn = 0;
-            gui_set_status(app, "Game started: remote turn");
+            gui_set_status(app, tr(&app->cfg, MC4_TX_GAME_STARTED_REMOTE));
         }
         gui_layout(app);
         gui_draw_all(app);
@@ -137,7 +137,7 @@ void protocol_handle_line(struct MC4App *app, const char *line)
     }
     if (util_starts(line, "NAME ")) {
         util_copy(app->remote_name, sizeof(app->remote_name), line + 5);
-        util_copy(msg, sizeof(msg), "Remote player: ");
+        util_copy(msg, sizeof(msg), tr(&app->cfg, MC4_TX_REMOTE_PLAYER));
         util_append(msg, sizeof(msg), app->remote_name);
         gui_add_chat(app, msg);
         return;
@@ -148,7 +148,7 @@ void protocol_handle_line(struct MC4App *app, const char *line)
             app_local_move(app, col, 0);
             if (!app->game.game_over) {
                 app->my_turn = 1;
-                gui_set_status(app, "Your turn");
+                gui_set_status(app, tr(&app->cfg, MC4_TX_YOUR_TURN));
             }
         }
         return;
@@ -161,11 +161,11 @@ void protocol_handle_line(struct MC4App *app, const char *line)
     }
     if (util_starts(line, "NEWGAME")) {
         app_new_game(app);
-        gui_set_status(app, "New network game");
+        gui_set_status(app, tr(&app->cfg, MC4_TX_NEW_NETWORK_GAME));
         return;
     }
     if (util_starts(line, "QUIT")) {
-        gui_set_status(app, "Remote disconnected");
+        gui_set_status(app, tr(&app->cfg, MC4_TX_REMOTE_DISCONNECTED));
         net_close(app);
         return;
     }

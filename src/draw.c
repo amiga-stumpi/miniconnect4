@@ -83,17 +83,17 @@ void gui_draw_lobby(struct MC4App *app)
               app->board_x + app->board_w, app->board_y + app->board_h, app->cfg.pen_bg);
     frame_rect(app->rp, app->board_x, app->board_y,
                app->board_x + app->board_w, app->board_y + app->board_h, app->cfg.pen_text);
-    draw_text(app->rp, app->board_x + 8, app->board_y + 14, "Lobby - available players", app->cfg.pen_text);
+    draw_text(app->rp, app->board_x + 8, app->board_y + 14, tr(&app->cfg, MC4_TX_LOBBY_PLAYERS), app->cfg.pen_text);
     y = (WORD)(app->board_y + 30);
     if (app->lobby_count == 0) {
-        draw_text(app->rp, app->board_x + 8, y, "No other players online", app->cfg.pen_text);
+        draw_text(app->rp, app->board_x + 8, y, tr(&app->cfg, MC4_TX_NO_PLAYERS), app->cfg.pen_text);
         return;
     }
     for (i = 0; i < app->lobby_count; ++i) {
         if (y > app->board_y + app->board_h - 10)
             break;
         util_copy(line, sizeof(line), app->lobby_players[i].name);
-        util_append(line, sizeof(line), app->lobby_players[i].busy ? "  (in game)" : "  (request game)");
+        util_append(line, sizeof(line), app->lobby_players[i].busy ? tr(&app->cfg, MC4_TX_IN_GAME) : tr(&app->cfg, MC4_TX_REQUEST_GAME));
         if (!app->lobby_players[i].busy)
             fill_rect(app->rp, app->board_x + 4, y - 9, ww - 12, y + 3, app->cfg.pen_board);
         draw_text(app->rp, app->board_x + 8, y, line, app->cfg.pen_text);

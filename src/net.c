@@ -113,7 +113,7 @@ int net_connect_lobby(struct MC4App *app, const char *host, UWORD port)
     app->my_turn = 0;
     send_line("HELLO MiniConnect4");
     send_name(app);
-    gui_set_status(app, "Lobby connected");
+    gui_set_status(app, tr(&app->cfg, MC4_TX_CONNECTED));
     gui_layout(app);
     gui_draw_all(app);
     return 1;
@@ -149,7 +149,7 @@ void net_poll(struct MC4App *app)
             continue;
         }
         if (n == 0) {
-            gui_set_status(app, "Disconnected");
+            gui_set_status(app, tr(&app->cfg, MC4_TX_OFFLINE_LOCAL));
             net_close(app);
         }
         break;

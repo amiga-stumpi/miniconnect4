@@ -37,7 +37,7 @@ static void check_invite_timeout(struct MC4App *app)
         return;
     }
     clear_invite_pending(app);
-    gui_set_status(app, "Keine Antwort - Lobby bereit");
+    gui_set_status(app, tr(&app->cfg, MC4_TX_NO_ANSWER));
 }
 
 static int is_default_lobby(const char *s)
@@ -56,11 +56,11 @@ static int is_default_lobby(const char *s)
 static void app_update_local_status(struct MC4App *app)
 {
     if (app->net_state == MC4_NET_CONNECTED)
-        util_copy(app->status, sizeof(app->status), app->my_turn ? "Your turn" : "Remote turn");
+        util_copy(app->status, sizeof(app->status), app->my_turn ? tr(&app->cfg, MC4_TX_YOUR_TURN) : tr(&app->cfg, MC4_TX_REMOTE_TURN));
     else if (app->cfg.vs_computer)
-        util_copy(app->status, sizeof(app->status), app->game.current_player == MC4_P1 ? "Your turn" : "Computer turn");
+        util_copy(app->status, sizeof(app->status), app->game.current_player == MC4_P1 ? tr(&app->cfg, MC4_TX_YOUR_TURN) : tr(&app->cfg, MC4_TX_COMPUTER_TURN));
     else
-        util_copy(app->status, sizeof(app->status), app->game.current_player == MC4_P1 ? "Player 1 turn" : "Player 2 turn");
+        util_copy(app->status, sizeof(app->status), app->game.current_player == MC4_P1 ? tr(&app->cfg, MC4_TX_PLAYER1_TURN) : tr(&app->cfg, MC4_TX_PLAYER2_TURN));
 }
 
 void app_new_game(struct MC4App *app)
@@ -84,7 +84,7 @@ static void app_maybe_computer_move(struct MC4App *app)
         return;
     if (app->game.current_player != MC4_P2)
         return;
-    gui_set_status(app, "Computer denkt...");
+    gui_set_status(app, tr(&app->cfg, MC4_TX_COMPUTER_THINKS));
     Delay(8);
     col = ai_choose_move(&app->game, MC4_P2, app->cfg.ai_level);
     if (col >= 0)
@@ -101,12 +101,12 @@ void app_local_move(struct MC4App *app, int col, int send_net)
     if (app->game.game_over)
         return;
     if (app->net_state == MC4_NET_CONNECTED && send_net && !app->my_turn) {
-        gui_set_status(app, "Wait for remote move");
+        gui_set_status(app, tr(&app->cfg, MC4_TX_WAIT_REMOTE));
         return;
     }
     player = app->game.current_player;
     if (!game_drop(&app->game, col, player, &row)) {
-        gui_set_status(app, "Column full");
+        gui_set_status(app, tr(&app->cfg, MC4_TX_COLUMN_FULL));
         return;
     }
     gui_animate_drop(app, col, row, player);
@@ -118,29 +118,30 @@ void app_local_move(struct MC4App *app, int col, int send_net)
     if (game_check_winner(&app->game, row, col)) {
         if (app->net_state == MC4_NET_CONNECTED) {
             if (player == app->game.local_player) {
-                gui_set_status(app, "Du hast gewonnen!");
+                gui_set_status(app, tr(&app->cfg, MC4_TX_YOU_WON));
                 sound_play(MC4_SOUND_WIN);
             } else {
-                gui_set_status(app, "Leider verloren!");
+                gui_set_status(app, tr(&app->cfg, MC4_TX_YOU_LOST));
                 sound_play(MC4_SOUND_LOSE);
             }
         } else {
-            util_copy(msg, sizeof(msg), "Player ");
-            util_append(msg, sizeof(msg), player == MC4_P1 ? "1 wins" : "2 wins");
+            util_copy(msg, sizeof(msg), tr(&app->cfg, MC4_TX_PLAYER));
+            util_append(msg, sizeof(msg), player == MC4_P1 ? "1" : "2");
+            util_append(msg, sizeof(msg), tr(&app->cfg, MC4_TX_WINS));
             gui_set_status(app, msg);
             sound_play(player == app->game.local_player ? MC4_SOUND_WIN : MC4_SOUND_LOSE);
         }
     } else if (app->game.game_over) {
-        gui_set_status(app, "Draw");
+        gui_set_status(app, tr(&app->cfg, MC4_TX_DRAW));
     } else {
         game_switch_player(&app->game);
         if (sent_net) {
             app->my_turn = 0;
-            gui_set_status(app, "Remote turn");
+            gui_set_status(app, tr(&app->cfg, MC4_TX_REMOTE_TURN));
         } else {
             if (app->net_state == MC4_NET_CONNECTED) {
                 app->my_turn = 1;
-                gui_set_status(app, "Your turn");
+                gui_set_status(app, tr(&app->cfg, MC4_TX_YOUR_TURN));
             } else {
                 app_update_local_status(app);
                 gui_draw_status(app);
@@ -152,7 +153,7 @@ void app_local_move(struct MC4App *app, int col, int send_net)
         app_maybe_computer_move(app);
 }
 
-static void do_menu(struct MC4App *app, UWORD menu, UWORD item)
+static void do_menu(struct MC4App *app, UWORD menu, UWORD item, UWORD sub)
 {
     if (menu == MC4_MENU_PROJECT) {
         if (item == MC4_PROJECT_NEW) {
@@ -165,13 +166,13 @@ static void do_menu(struct MC4App *app, UWORD menu, UWORD item)
         if (item == MC4_NETWORK_LOBBY) {
             if (!net_connect_lobby(app, app->cfg.lobby, app->cfg.port)) {
                 if (!is_default_lobby(app->cfg.lobby)) {
-                    gui_set_status(app, "Lobby fallback...");
+                    gui_set_status(app, tr(&app->cfg, MC4_TX_LOBBY_FALLBACK));
                     net_connect_lobby(app, MC4_DEFAULT_LOBBY, app->cfg.port);
                 }
             }
         } else if (item == MC4_NETWORK_DISCONNECT) {
             net_close(app);
-            gui_set_status(app, "Offline local game");
+            gui_set_status(app, tr(&app->cfg, MC4_TX_OFFLINE_LOCAL));
         }
     } else if (menu == MC4_MENU_OPTIONS) {
         if (item == MC4_OPTIONS_NAME) {
@@ -182,13 +183,24 @@ static void do_menu(struct MC4App *app, UWORD menu, UWORD item)
             gui_draw_all(app);
         } else if (item == MC4_OPTIONS_COLORS) {
             gui_edit_colors(app);
+        } else if (item == MC4_OPTIONS_LANGUAGE) {
+            if (sub <= MC4_LANG_PL) {
+                app->cfg.language = (UBYTE)sub;
+                config_save(&app->cfg);
+                if (app->win) {
+                    gui_apply_language(app);
+                    gui_refresh_menus(app);
+                }
+                app_update_local_status(app);
+                gui_draw_all(app);
+            }
         } else if (item == MC4_OPTIONS_HUMAN) {
             net_close(app);
             app->view = MC4_VIEW_GAME;
             app->cfg.vs_computer = 0;
             config_save(&app->cfg);
             app_new_game(app);
-            gui_set_status(app, "Mensch gegen Mensch");
+            gui_set_status(app, tr(&app->cfg, MC4_TX_HUMAN_MODE));
         } else if (item == MC4_OPTIONS_AI_EASY || item == MC4_OPTIONS_AI_MEDIUM || item == MC4_OPTIONS_AI_HARD) {
             net_close(app);
             app->view = MC4_VIEW_GAME;
@@ -198,11 +210,11 @@ static void do_menu(struct MC4App *app, UWORD menu, UWORD item)
             config_save(&app->cfg);
             app_new_game(app);
             if (app->cfg.ai_level == MC4_AI_EASY)
-                gui_set_status(app, "Computer: Einfach");
+                gui_set_status(app, tr(&app->cfg, MC4_TX_COMPUTER_EASY_STATUS));
             else if (app->cfg.ai_level == MC4_AI_MEDIUM)
-                gui_set_status(app, "Computer: Mittel");
+                gui_set_status(app, tr(&app->cfg, MC4_TX_COMPUTER_MEDIUM_STATUS));
             else
-                gui_set_status(app, "Computer: Schwer");
+                gui_set_status(app, tr(&app->cfg, MC4_TX_COMPUTER_HARD_STATUS));
         }
     } else if (menu == MC4_MENU_HELP) {
         if (item == MC4_HELP_INFO)
@@ -321,9 +333,9 @@ static void event_loop(struct MC4App *app)
                         util_copy(app->invite_name, sizeof(app->invite_name), app->lobby_players[player].name);
                         app->invite_pending = 1;
                         app->invite_wait_ticks = 0;
-                        gui_set_status(app, "Anfrage gesendet");
+                        gui_set_status(app, tr(&app->cfg, MC4_TX_INVITE_SENT));
                     } else {
-                        gui_set_status(app, "Anfrage fehlgeschlagen");
+                        gui_set_status(app, tr(&app->cfg, MC4_TX_INVITE_FAILED));
                     }
                 } else {
                     col = gui_hit_column(app, mx, my);
@@ -334,7 +346,7 @@ static void event_loop(struct MC4App *app)
                 handle_key(app, code, qualifier);
             } else if (classv == IDCMP_MENUPICK) {
                 if (code != MENUNULL)
-                    do_menu(app, MENUNUM(code), ITEMNUM(code));
+                    do_menu(app, MENUNUM(code), ITEMNUM(code), SUBNUM(code));
             }
         }
         net_poll(app);
@@ -356,12 +368,12 @@ int main(void)
     app.running = 1;
     app.my_turn = 1;
     app.view = MC4_VIEW_GAME;
-    util_copy(app.status, sizeof(app.status), "Offline local game");
+    util_copy(app.status, sizeof(app.status), tr(&app.cfg, MC4_TX_OFFLINE_LOCAL));
 
     sound_init();
 
     if (!gui_open(&app)) {
-        Write(Output(), "MiniConnect4: window open failed\n", 33);
+        Write(Output(), (APTR)tr(&app.cfg, MC4_TX_WINDOW_OPEN_FAILED), util_len(tr(&app.cfg, MC4_TX_WINDOW_OPEN_FAILED)));
         return 20;
     }
 
