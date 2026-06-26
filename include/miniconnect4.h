@@ -214,7 +214,7 @@ int net_send_lobby_chat(struct MC4App *app, const char *text);
 int net_send_invite(struct MC4App *app, const char *name);
 int net_send_accept(struct MC4App *app, const char *name);
 int net_send_decline(struct MC4App *app, const char *name);
-int net_send_rematch(struct MC4App *app, int yes);
+int net_send_rematch(struct MC4App *app, int yes, int starter);
 
 void protocol_handle_line(struct MC4App *app, const char *line);
 void app_new_game(struct MC4App *app);

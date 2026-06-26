@@ -104,6 +104,9 @@ void protocol_handle_line(struct MC4App *app, const char *line)
     if (util_starts(line, "START ")) {
         const char *p = line + 6;
         const char *role;
+        const char *first;
+        UBYTE local_role;
+        UBYTE first_role;
         int n = 0;
         while (p[n] && p[n] != ' ' && n < MC4_NAME_LEN) {
             app->remote_name[n] = p[n];
@@ -115,22 +118,24 @@ void protocol_handle_line(struct MC4App *app, const char *line)
         if (*p == ' ')
             ++p;
         role = p;
+        while (*p && *p != ' ')
+            ++p;
+        if (*p == ' ')
+            ++p;
+        first = p;
+        local_role = util_starts(role, "P2") ? MC4_P2 : MC4_P1;
+        first_role = util_starts(first, "P2") ? MC4_P2 : MC4_P1;
         sound_play(MC4_SOUND_START);
         game_init(&app->game);
+        app->game.local_player = local_role;
+        app->game.current_player = first_role;
+        app->my_turn = local_role == first_role ? 1 : 0;
         app->rematch_prompted = 0;
         app->invite_pending = 0;
         app->invite_wait_ticks = 0;
         app->invite_name[0] = 0;
         app->view = MC4_VIEW_GAME;
-        if (util_starts(role, "P1")) {
-            app->game.local_player = MC4_P1;
-            app->my_turn = 1;
-            gui_set_status(app, tr(&app->cfg, MC4_TX_GAME_STARTED_YOUR));
-        } else {
-            app->game.local_player = MC4_P2;
-            app->my_turn = 0;
-            gui_set_status(app, tr(&app->cfg, MC4_TX_GAME_STARTED_REMOTE));
-        }
+        gui_set_status(app, app->my_turn ? tr(&app->cfg, MC4_TX_GAME_STARTED_YOUR) : tr(&app->cfg, MC4_TX_GAME_STARTED_REMOTE));
         gui_layout(app);
         gui_draw_all(app);
         return;

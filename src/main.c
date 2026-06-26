@@ -84,10 +84,10 @@ static void app_offer_rematch(struct MC4App *app)
         return;
     app->rematch_prompted = 1;
     if (gui_confirm_rematch(app)) {
-        net_send_rematch(app, 1);
+        net_send_rematch(app, 1, app->game.winner);
         gui_set_status(app, tr(&app->cfg, MC4_TX_REMATCH_WAIT));
     } else {
-        net_send_rematch(app, 0);
+        net_send_rematch(app, 0, 0);
         gui_set_status(app, tr(&app->cfg, MC4_TX_BACK_TO_LOBBY));
     }
 }

@@ -219,11 +219,16 @@ int net_send_decline(struct MC4App *app, const char *name)
     return send_line(line);
 }
 
-int net_send_rematch(struct MC4App *app, int yes)
+int net_send_rematch(struct MC4App *app, int yes, int starter)
 {
+    char line[24];
     if (app->net_state != MC4_NET_CONNECTED)
         return 0;
-    return send_line(yes ? "REMATCH YES" : "REMATCH NO");
+    if (!yes)
+        return send_line("REMATCH NO");
+    util_copy(line, sizeof(line), "REMATCH YES ");
+    util_append(line, sizeof(line), starter == MC4_P2 ? "P2" : starter == MC4_P1 ? "P1" : "P0");
+    return send_line(line);
 }
 
 int net_send_newgame(struct MC4App *app)
