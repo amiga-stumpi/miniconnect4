@@ -154,18 +154,18 @@ static char rawkey_to_char(UWORD code, UWORD qualifier)
     char c = 0;
 
     switch (code) {
-        case 0x02: return shift ? '!' : '1';
-        case 0x03: return shift ? '"' : '2';
-        case 0x04: return shift ? '#' : '3';
-        case 0x05: return shift ? '$' : '4';
-        case 0x06: return shift ? '%' : '5';
-        case 0x07: return shift ? '&' : '6';
-        case 0x08: return shift ? '/' : '7';
-        case 0x09: return shift ? '(' : '8';
-        case 0x0a: return shift ? ')' : '9';
-        case 0x0b: return shift ? '=' : '0';
-        case 0x0c: return shift ? '?' : '-';
-        case 0x0d: return shift ? '`' : '\'';
+        case 0x01: return shift ? '!' : '1';
+        case 0x02: return shift ? '"' : '2';
+        case 0x03: return shift ? '#' : '3';
+        case 0x04: return shift ? '$' : '4';
+        case 0x05: return shift ? '%' : '5';
+        case 0x06: return shift ? '&' : '6';
+        case 0x07: return shift ? '/' : '7';
+        case 0x08: return shift ? '(' : '8';
+        case 0x09: return shift ? ')' : '9';
+        case 0x0a: return shift ? '=' : '0';
+        case 0x0b: return shift ? '?' : '-';
+        case 0x0c: return shift ? '`' : '\'';
         case 0x1a: return shift ? '{' : '[';
         case 0x1b: return shift ? '}' : ']';
         case 0x29: return shift ? ':' : ';';
