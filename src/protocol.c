@@ -71,9 +71,33 @@ void protocol_handle_line(struct MC4App *app, const char *line)
         return;
     }
     if (util_starts(line, "INVITE ")) {
-        util_copy(msg, sizeof(msg), "Challenge from ");
+        util_copy(msg, sizeof(msg), "Anfrage von ");
         util_append(msg, sizeof(msg), line + 7);
         gui_add_chat(app, msg);
+        if (gui_confirm_invite(app, line + 7)) {
+            net_send_accept(app, line + 7);
+            gui_set_status(app, "Anfrage angenommen");
+        } else {
+            net_send_decline(app, line + 7);
+            gui_set_status(app, "Anfrage abgelehnt");
+        }
+        return;
+    }
+    if (util_starts(line, "DECLINED ")) {
+        app->invite_pending = 0;
+        app->invite_wait_ticks = 0;
+        app->invite_name[0] = 0;
+        util_copy(msg, sizeof(msg), line + 9);
+        util_append(msg, sizeof(msg), " hat abgelehnt");
+        gui_add_chat(app, msg);
+        gui_set_status(app, "Anfrage abgelehnt");
+        return;
+    }
+    if (util_starts(line, "INVITEFAILED ")) {
+        app->invite_pending = 0;
+        app->invite_wait_ticks = 0;
+        app->invite_name[0] = 0;
+        gui_set_status(app, line + 13);
         return;
     }
     if (util_starts(line, "START ")) {
@@ -91,6 +115,9 @@ void protocol_handle_line(struct MC4App *app, const char *line)
             ++p;
         role = p;
         game_init(&app->game);
+        app->invite_pending = 0;
+        app->invite_wait_ticks = 0;
+        app->invite_name[0] = 0;
         app->view = MC4_VIEW_GAME;
         if (util_starts(role, "P1")) {
             app->game.local_player = MC4_P1;

@@ -10,6 +10,25 @@ ULONG __stack = 32000;
 
 extern void chat_submit(struct MC4App *app);
 
+static void clear_invite_pending(struct MC4App *app)
+{
+    app->invite_pending = 0;
+    app->invite_wait_ticks = 0;
+    app->invite_name[0] = 0;
+}
+
+static void check_invite_timeout(struct MC4App *app)
+{
+    if (!app->invite_pending)
+        return;
+    if (app->invite_wait_ticks < 1500) {
+        ++app->invite_wait_ticks;
+        return;
+    }
+    clear_invite_pending(app);
+    gui_set_status(app, "Keine Antwort - Lobby bereit");
+}
+
 static int is_default_lobby(const char *s)
 {
     int i = 0;
@@ -183,8 +202,14 @@ static void event_loop(struct MC4App *app)
             } else if (classv == IDCMP_MOUSEBUTTONS && code == SELECTDOWN) {
                 player = gui_hit_lobby_player(app, mx, my);
                 if (player >= 0) {
-                    net_send_invite(app, app->lobby_players[player].name);
-                    gui_set_status(app, "Challenge sent");
+                    if (net_send_invite(app, app->lobby_players[player].name)) {
+                        util_copy(app->invite_name, sizeof(app->invite_name), app->lobby_players[player].name);
+                        app->invite_pending = 1;
+                        app->invite_wait_ticks = 0;
+                        gui_set_status(app, "Anfrage gesendet");
+                    } else {
+                        gui_set_status(app, "Anfrage fehlgeschlagen");
+                    }
                 } else {
                     col = gui_hit_column(app, mx, my);
                     if (col >= 0)
@@ -198,6 +223,7 @@ static void event_loop(struct MC4App *app)
             }
         }
         net_poll(app);
+        check_invite_timeout(app);
         Delay(1);
     }
 }

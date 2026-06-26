@@ -10,6 +10,7 @@
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <time.h>
 
 #define MAX_CLIENTS 32
 #define NAME_LEN 31
@@ -23,6 +24,9 @@ struct Client {
     int inlen;
     int busy;
     int peer;
+    int pending_from;
+    int pending_to;
+    time_t pending_time;
 };
 
 static struct Client clients[MAX_CLIENTS];
@@ -120,21 +124,63 @@ static void broadcast_users(void)
 static void close_client(int idx)
 {
     int peer;
+    int i;
     if (clients[idx].fd < 0)
         return;
     peer = clients[idx].peer;
+    for (i = 0; i < MAX_CLIENTS; ++i) {
+        if (clients[i].pending_from == idx || clients[i].pending_to == idx) {
+            clients[i].pending_from = -1;
+            clients[i].pending_to = -1;
+            clients[i].pending_time = 0;
+        }
+    }
     close(clients[idx].fd);
     clients[idx].fd = -1;
     clients[idx].name[0] = 0;
     clients[idx].inlen = 0;
     clients[idx].busy = 0;
     clients[idx].peer = -1;
+    clients[idx].pending_from = -1;
+    clients[idx].pending_to = -1;
+    clients[idx].pending_time = 0;
     if (peer >= 0 && clients[peer].fd >= 0) {
         clients[peer].busy = 0;
         clients[peer].peer = -1;
+        clients[peer].pending_from = -1;
+        clients[peer].pending_to = -1;
+        clients[peer].pending_time = 0;
         send_line(clients[peer].fd, "QUIT");
     }
     broadcast_users();
+}
+
+static void clear_pending_pair(int a, int b)
+{
+    if (a >= 0 && clients[a].fd >= 0) {
+        clients[a].pending_from = -1;
+        clients[a].pending_to = -1;
+        clients[a].pending_time = 0;
+    }
+    if (b >= 0 && clients[b].fd >= 0) {
+        clients[b].pending_from = -1;
+        clients[b].pending_to = -1;
+        clients[b].pending_time = 0;
+    }
+}
+
+static int pending_valid(int requester, int target)
+{
+    time_t now = time(0);
+    if (requester < 0 || target < 0)
+        return 0;
+    if (clients[requester].pending_to != target || clients[target].pending_from != requester)
+        return 0;
+    if (now - clients[requester].pending_time > 30) {
+        clear_pending_pair(requester, target);
+        return 0;
+    }
+    return 1;
 }
 
 static void relay_to_peer(int idx, const char *line)
@@ -161,6 +207,7 @@ static void lobby_chat(int idx, const char *text)
 static void start_game(int a, int b)
 {
     char line[BUF_LEN];
+    clear_pending_pair(a, b);
     clients[a].busy = 1;
     clients[b].busy = 1;
     clients[a].peer = b;
@@ -195,10 +242,32 @@ static void handle_line(int idx, char *line)
         lobby_chat(idx, line + 10);
     } else if (strncmp(line, "INVITE ", 7) == 0) {
         target = find_name(line + 7);
-        if (target >= 0 && target != idx && !clients[target].busy && !clients[idx].busy)
-            start_game(idx, target);
+        if (target >= 0 && target != idx && !clients[target].busy && !clients[idx].busy &&
+            clients[idx].pending_to < 0 && clients[target].pending_from < 0) {
+            char invite[BUF_LEN];
+            clients[idx].pending_to = target;
+            clients[idx].pending_time = time(0);
+            clients[target].pending_from = idx;
+            clients[target].pending_time = clients[idx].pending_time;
+            snprintf(invite, sizeof(invite), "INVITE %.31s", clients[idx].name);
+            send_line(clients[target].fd, invite);
+        } else {
+            send_line(clients[idx].fd, "INVITEFAILED Spieler nicht verfuegbar");
+        }
+    } else if (strncmp(line, "ACCEPT ", 7) == 0) {
+        target = find_name(line + 7);
+        if (target >= 0 && pending_valid(target, idx) && !clients[target].busy && !clients[idx].busy)
+            start_game(target, idx);
         else
-            send_line(clients[idx].fd, "LOBBYCHAT Server: player is not available");
+            send_line(clients[idx].fd, "INVITEFAILED Anfrage abgelaufen");
+    } else if (strncmp(line, "DECLINE ", 8) == 0) {
+        target = find_name(line + 8);
+        if (target >= 0 && clients[target].fd >= 0) {
+            char reply[BUF_LEN];
+            snprintf(reply, sizeof(reply), "DECLINED %.31s", clients[idx].name);
+            send_line(clients[target].fd, reply);
+            clear_pending_pair(target, idx);
+        }
     } else if (strncmp(line, "MOVE ", 5) == 0 || strncmp(line, "CHAT ", 5) == 0 || strncmp(line, "NEWGAME", 7) == 0) {
         relay_to_peer(idx, line);
     } else if (strncmp(line, "QUIT", 4) == 0) {
@@ -308,6 +377,9 @@ int main(int argc, char **argv)
                 clients[idx].inlen = 0;
                 clients[idx].busy = 0;
                 clients[idx].peer = -1;
+                clients[idx].pending_from = -1;
+                clients[idx].pending_to = -1;
+                clients[idx].pending_time = 0;
                 send_line(fd, "HELLO MiniConnect4Lobby");
             } else if (fd >= 0) {
                 send_line(fd, "LOBBYCHAT Server: lobby full");

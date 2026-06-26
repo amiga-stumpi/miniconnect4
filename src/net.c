@@ -197,6 +197,26 @@ int net_send_invite(struct MC4App *app, const char *name)
     return send_line(line);
 }
 
+int net_send_accept(struct MC4App *app, const char *name)
+{
+    char line[NET_BUF];
+    if (app->net_state != MC4_NET_CONNECTED)
+        return 0;
+    util_copy(line, sizeof(line), "ACCEPT ");
+    util_append(line, sizeof(line), name);
+    return send_line(line);
+}
+
+int net_send_decline(struct MC4App *app, const char *name)
+{
+    char line[NET_BUF];
+    if (app->net_state != MC4_NET_CONNECTED)
+        return 0;
+    util_copy(line, sizeof(line), "DECLINE ");
+    util_append(line, sizeof(line), name);
+    return send_line(line);
+}
+
 int net_send_newgame(struct MC4App *app)
 {
     if (app->net_state != MC4_NET_CONNECTED)

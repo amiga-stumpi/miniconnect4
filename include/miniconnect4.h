@@ -10,7 +10,7 @@
 
 #define MC4_COLS 7
 #define MC4_ROWS 6
-#define MC4_CHAT_LINES 4
+#define MC4_CHAT_LINES 9
 #define MC4_LOBBY_MAX_PLAYERS 16
 #define MC4_CHAT_LEN 96
 #define MC4_NAME_LEN 31
@@ -108,6 +108,9 @@ struct MC4App {
     UBYTE net_mode;
     UBYTE net_state;
     UBYTE my_turn;
+    UBYTE invite_pending;
+    UWORD invite_wait_ticks;
+    char invite_name[MC4_NAME_LEN + 1];
 };
 
 void util_copy(char *dst, int max_len, const char *src);
@@ -143,6 +146,7 @@ void gui_set_status(struct MC4App *app, const char *s);
 void gui_add_chat(struct MC4App *app, const char *s);
 void gui_info(struct MC4App *app);
 void gui_edit_player_name(struct MC4App *app);
+int gui_confirm_invite(struct MC4App *app, const char *name);
 
 int net_init(void);
 void net_shutdown(void);
@@ -154,6 +158,8 @@ int net_send_chat(struct MC4App *app, const char *text);
 int net_send_newgame(struct MC4App *app);
 int net_send_lobby_chat(struct MC4App *app, const char *text);
 int net_send_invite(struct MC4App *app, const char *name);
+int net_send_accept(struct MC4App *app, const char *name);
+int net_send_decline(struct MC4App *app, const char *name);
 
 void protocol_handle_line(struct MC4App *app, const char *line);
 void app_new_game(struct MC4App *app);

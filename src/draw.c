@@ -100,7 +100,7 @@ void gui_draw_lobby(struct MC4App *app)
         if (y > app->board_y + app->board_h - 10)
             break;
         util_copy(line, sizeof(line), app->lobby_players[i].name);
-        util_append(line, sizeof(line), app->lobby_players[i].busy ? "  (in game)" : "  (click to play)");
+        util_append(line, sizeof(line), app->lobby_players[i].busy ? "  (in game)" : "  (request game)");
         if (!app->lobby_players[i].busy)
             fill_rect(app->rp, app->board_x + 4, y - 9, ww - 12, y + 3, PEN_BOARD);
         draw_text(app->rp, app->board_x + 8, y, line, PEN_TEXT);
@@ -112,8 +112,8 @@ void gui_draw_lobby(struct MC4App *app)
 void gui_draw_status(struct MC4App *app)
 {
     WORD ww = app->win->GZZWidth ? app->win->GZZWidth : app->win->Width;
-    WORD wh = app->win->GZZHeight ? app->win->GZZHeight : app->win->Height;
-    fill_rect(app->rp, 4, app->status_y - 10, ww - 8, wh - 4, PEN_BG);
+    fill_rect(app->rp, 4, app->status_y - 10, ww - 8, app->status_y + 3, PEN_BG);
+    frame_rect(app->rp, 4, app->status_y - 11, ww - 8, app->status_y + 4, PEN_TEXT);
     draw_text(app->rp, 8, app->status_y, app->status, PEN_TEXT);
 }
 
@@ -121,17 +121,25 @@ void gui_draw_chat(struct MC4App *app)
 {
     int i;
     WORD y = app->chat_y;
+    WORD ww;
+    WORD chat_bottom;
+    WORD input_y;
+
     if (!app->cfg.chat_enabled)
         return;
-    WORD ww = app->win->GZZWidth ? app->win->GZZWidth : app->win->Width;
-    WORD wh = app->win->GZZHeight ? app->win->GZZHeight : app->win->Height;
-    fill_rect(app->rp, 4, y - 10, ww - 8, wh - 6, PEN_BG);
+    ww = app->win->GZZWidth ? app->win->GZZWidth : app->win->Width;
+    chat_bottom = (WORD)(app->chat_y + (MC4_CHAT_LINES * 10) + 16);
+    input_y = (WORD)(app->chat_y + (MC4_CHAT_LINES * 10) + 4);
+
+    fill_rect(app->rp, 4, y - 10, ww - 8, chat_bottom, PEN_BG);
+    frame_rect(app->rp, 4, y - 11, ww - 8, chat_bottom, PEN_TEXT);
+    Move(app->rp, 4, input_y - 10); Draw(app->rp, ww - 8, input_y - 10);
     for (i = 0; i < app->chat_count; ++i) {
         draw_text(app->rp, 8, y, app->chat_lines[i], PEN_TEXT);
         y += 10;
     }
-    draw_text(app->rp, 8, y + 2, ">", PEN_TEXT);
-    draw_text(app->rp, 20, y + 2, app->chat_input, PEN_TEXT);
+    draw_text(app->rp, 8, input_y, ">", PEN_TEXT);
+    draw_text(app->rp, 20, input_y, app->chat_input, PEN_TEXT);
 }
 
 void gui_draw_all(struct MC4App *app)

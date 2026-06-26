@@ -31,7 +31,7 @@ void gui_layout(struct MC4App *app)
     WORD ww = app->win->GZZWidth ? app->win->GZZWidth : app->win->Width;
     WORD wh = app->win->GZZHeight ? app->win->GZZHeight : app->win->Height;
     WORD top = 8;
-    WORD bottom = 42;
+    WORD bottom = app->cfg.chat_enabled ? 150 : 28;
     WORD avail_w = (WORD)(ww - 12);
     WORD avail_h = (WORD)(wh - top - bottom);
 
@@ -52,7 +52,7 @@ void gui_layout(struct MC4App *app)
     app->board_x = 6;
     app->board_y = top;
     app->status_y = (WORD)(app->board_y + app->board_h + 14);
-    app->chat_y = (WORD)(app->status_y + 12);
+    app->chat_y = (WORD)(app->status_y + 22);
 }
 
 void gui_enforce_aspect(struct MC4App *app)
@@ -76,13 +76,13 @@ int gui_open(struct MC4App *app)
 
     x = app->cfg.win_x; y = app->cfg.win_y; w = app->cfg.win_w; h = app->cfg.win_h;
     if (w < 300) w = 300;
-    if (h < 180) h = 180;
+    if (h < 300) h = 300;
 
     for (i = 0; i < 3; ++i) {
         nw.LeftEdge = i == 0 ? x : 0;
         nw.TopEdge = i == 0 ? y : 0;
         nw.Width = i == 0 ? w : (i == 1 ? 320 : 300);
-        nw.Height = i == 0 ? h : (i == 1 ? 200 : 180);
+        nw.Height = i == 0 ? h : (i == 1 ? 320 : 300);
         nw.DetailPen = 0;
         nw.BlockPen = 1;
         nw.IDCMPFlags = IDCMP_CLOSEWINDOW | IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY | IDCMP_NEWSIZE | IDCMP_REFRESHWINDOW | IDCMP_MENUPICK;
@@ -95,7 +95,7 @@ int gui_open(struct MC4App *app)
         nw.Screen = 0;
         nw.BitMap = 0;
         nw.MinWidth = 300;
-        nw.MinHeight = 180;
+        nw.MinHeight = 300;
         nw.MaxWidth = -1;
         nw.MaxHeight = -1;
         nw.Type = WBENCHSCREEN;
@@ -147,6 +147,8 @@ int gui_hit_lobby_player(struct MC4App *app, WORD x, WORD y)
     if (app->view != MC4_VIEW_LOBBY)
         return -1;
     if (x < app->board_x || x >= app->board_x + app->board_w)
+        return -1;
+    if (app->invite_pending)
         return -1;
     if (y < app->board_y + 21 || y >= app->board_y + app->board_h)
         return -1;
@@ -322,6 +324,32 @@ void gui_edit_player_name(struct MC4App *app)
         gui_set_status(app, "Player name saved");
     }
     CloseWindow(w);
+}
+
+int gui_confirm_invite(struct MC4App *app, const char *name)
+{
+    struct IntuiText body;
+    struct IntuiText yes;
+    struct IntuiText no;
+    char text[96];
+
+    util_copy(text, sizeof(text), "Anfrage von ");
+    util_append(text, sizeof(text), name);
+    util_append(text, sizeof(text), " annehmen?");
+
+    body.FrontPen = 1; body.BackPen = 0; body.DrawMode = JAM1;
+    body.LeftEdge = 8; body.TopEdge = 8; body.ITextFont = 0;
+    body.IText = (UBYTE *)text; body.NextText = 0;
+
+    yes.FrontPen = 1; yes.BackPen = 0; yes.DrawMode = JAM1;
+    yes.LeftEdge = 6; yes.TopEdge = 3; yes.ITextFont = 0;
+    yes.IText = (UBYTE *)"Annehmen"; yes.NextText = 0;
+
+    no.FrontPen = 1; no.BackPen = 0; no.DrawMode = JAM1;
+    no.LeftEdge = 6; no.TopEdge = 3; no.ITextFont = 0;
+    no.IText = (UBYTE *)"Ablehnen"; no.NextText = 0;
+
+    return AutoRequest(app->win, &body, &yes, &no, 0, 0, 260, 70) ? 1 : 0;
 }
 
 void gui_info(struct MC4App *app)
