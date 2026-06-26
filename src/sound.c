@@ -20,6 +20,8 @@ static UBYTE g_audio_open;
 static UBYTE g_audio_busy;
 static char g_sound_status[64] = "sound not initialized";
 
+static int sound_prepare_raw(BYTE *data, ULONG len, UWORD period);
+
 static const BYTE *const g_src_data[SOUND_COUNT] = {
     sound_move_data,
     sound_invite_data,
@@ -179,11 +181,51 @@ static int sound_prepare_write(int id)
         g_audio_busy = 0;
     }
 
+    return sound_prepare_raw(g_chip_data[id], g_chip_len[id], SOUND_PERIOD_8KHZ);
+}
+
+
+static const char *finish_status(void)
+{
+    if (g_audio_write_io->ioa_Request.io_Error == 0)
+        set_status("synthetic tone ok");
+    else if (g_audio_write_io->ioa_Request.io_Error == ADIOERR_NOALLOCATION)
+        set_status("sound err no allocation");
+    else if (g_audio_write_io->ioa_Request.io_Error == ADIOERR_ALLOCFAILED)
+        set_status("sound err alloc failed");
+    else if (g_audio_write_io->ioa_Request.io_Error == ADIOERR_CHANNELSTOLEN)
+        set_status("sound err channel stolen");
+    else
+        set_status("sound err other");
+    return sound_status();
+}
+
+static int sound_prepare_raw(BYTE *data, ULONG len, UWORD period)
+{
+    if (!g_audio_open || !g_audio_write_io) {
+        set_status("sound not open");
+        return 0;
+    }
+    if (!data || len == 0) {
+        set_status("sound bad data");
+        return 0;
+    }
+
+    if (g_audio_busy) {
+        if (!CheckIO((struct IORequest *)g_audio_write_io)) {
+            AbortIO((struct IORequest *)g_audio_write_io);
+            WaitIO((struct IORequest *)g_audio_write_io);
+        } else {
+            WaitIO((struct IORequest *)g_audio_write_io);
+        }
+        g_audio_busy = 0;
+    }
+
     g_audio_write_io->ioa_Request.io_Command = CMD_WRITE;
     g_audio_write_io->ioa_Request.io_Flags = ADIOF_PERVOL;
-    g_audio_write_io->ioa_Data = (UBYTE *)g_chip_data[id];
-    g_audio_write_io->ioa_Length = g_chip_len[id];
-    g_audio_write_io->ioa_Period = SOUND_PERIOD_8KHZ;
+    g_audio_write_io->ioa_Data = (UBYTE *)data;
+    g_audio_write_io->ioa_Length = len;
+    g_audio_write_io->ioa_Period = period;
     g_audio_write_io->ioa_Volume = SOUND_VOLUME;
     g_audio_write_io->ioa_Cycles = 1;
     return 1;
@@ -200,19 +242,24 @@ void sound_play(int id)
 
 const char *sound_test(void)
 {
-    if (!sound_prepare_write(MC4_SOUND_MOVE))
+    BYTE *tone;
+    ULONG i;
+    ULONG len = 8000;
+
+    tone = (BYTE *)AllocMem(len, MEMF_CHIP | MEMF_PUBLIC);
+    if (!tone) {
+        set_status("tone no chip ram");
         return sound_status();
+    }
+    for (i = 0; i < len; ++i)
+        tone[i] = ((i / 16) & 1) ? 100 : -100;
+
+    if (!sound_prepare_raw(tone, len, SOUND_PERIOD_8KHZ)) {
+        FreeMem(tone, len);
+        return sound_status();
+    }
     DoIO((struct IORequest *)g_audio_write_io);
     g_audio_busy = 0;
-    if (g_audio_write_io->ioa_Request.io_Error == 0)
-        set_status("sound test ok");
-    else if (g_audio_write_io->ioa_Request.io_Error == ADIOERR_NOALLOCATION)
-        set_status("sound err no allocation");
-    else if (g_audio_write_io->ioa_Request.io_Error == ADIOERR_ALLOCFAILED)
-        set_status("sound err alloc failed");
-    else if (g_audio_write_io->ioa_Request.io_Error == ADIOERR_CHANNELSTOLEN)
-        set_status("sound err channel stolen");
-    else
-        set_status("sound err other");
-    return sound_status();
+    FreeMem(tone, len);
+    return finish_status();
 }
