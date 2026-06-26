@@ -32,20 +32,21 @@ void gui_layout(struct MC4App *app)
     WORD wh = app->win->GZZHeight ? app->win->GZZHeight : app->win->Height;
     WORD top = 8;
     WORD bottom = app->cfg.chat_enabled ? 150 : 28;
+    WORD min_cell = (wh < 280) ? 10 : 18;
     WORD avail_w = (WORD)(ww - 12);
     WORD avail_h = (WORD)(wh - top - bottom);
 
-    if (avail_w < MC4_COLS * 18)
-        avail_w = MC4_COLS * 18;
-    if (avail_h < MC4_ROWS * 18)
-        avail_h = MC4_ROWS * 18;
+    if (avail_w < MC4_COLS * min_cell)
+        avail_w = MC4_COLS * min_cell;
+    if (avail_h < MC4_ROWS * min_cell)
+        avail_h = MC4_ROWS * min_cell;
 
     app->cell_w = (WORD)(avail_w / MC4_COLS);
     app->cell_h = (WORD)(avail_h / MC4_ROWS);
-    if (app->cell_w < 18)
-        app->cell_w = 18;
-    if (app->cell_h < 18)
-        app->cell_h = 18;
+    if (app->cell_w < min_cell)
+        app->cell_w = min_cell;
+    if (app->cell_h < min_cell)
+        app->cell_h = min_cell;
     app->cell = app->cell_w < app->cell_h ? app->cell_w : app->cell_h;
     app->board_w = (WORD)(app->cell_w * MC4_COLS);
     app->board_h = (WORD)(app->cell_h * MC4_ROWS);
@@ -76,13 +77,13 @@ int gui_open(struct MC4App *app)
 
     x = app->cfg.win_x; y = app->cfg.win_y; w = app->cfg.win_w; h = app->cfg.win_h;
     if (w < 300) w = 300;
-    if (h < 300) h = 300;
+    if (h < 220) h = 220;
 
     for (i = 0; i < 3; ++i) {
         nw.LeftEdge = i == 0 ? x : 0;
         nw.TopEdge = i == 0 ? y : 0;
         nw.Width = i == 0 ? w : (i == 1 ? 320 : 300);
-        nw.Height = i == 0 ? h : (i == 1 ? 320 : 300);
+        nw.Height = i == 0 ? h : (i == 1 ? 240 : 220);
         nw.DetailPen = 0;
         nw.BlockPen = 1;
         nw.IDCMPFlags = IDCMP_CLOSEWINDOW | IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY | IDCMP_NEWSIZE | IDCMP_REFRESHWINDOW | IDCMP_MENUPICK;
@@ -95,7 +96,7 @@ int gui_open(struct MC4App *app)
         nw.Screen = 0;
         nw.BitMap = 0;
         nw.MinWidth = 300;
-        nw.MinHeight = 300;
+        nw.MinHeight = 180;
         nw.MaxWidth = -1;
         nw.MaxHeight = -1;
         nw.Type = WBENCHSCREEN;
