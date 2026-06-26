@@ -24,18 +24,18 @@ void gui_layout(struct MC4App *app)
     WORD wh = app->win->Height;
     WORD top = 22;
     WORD side = 100;
-    WORD avail_w = (WORD)(ww - side - 18);
+    WORD gap = 8;
+    WORD avail_w = (WORD)(ww - side - gap - 16);
     WORD avail_h = (WORD)(wh - top - (app->cfg.chat_enabled ? 72 : 32));
     WORD cell_w = (WORD)(avail_w / MC4_COLS);
     WORD cell_h = (WORD)(avail_h / MC4_ROWS);
     WORD by;
+    WORD bx;
     UWORD n = 0;
 
     app->cell = cell_w < cell_h ? cell_w : cell_h;
     if (app->cell < 18)
         app->cell = 18;
-    if (app->cell > 34)
-        app->cell = 34;
     app->board_w = (WORD)(app->cell * MC4_COLS);
     app->board_h = (WORD)(app->cell * MC4_ROWS);
     app->board_x = 8;
@@ -43,14 +43,20 @@ void gui_layout(struct MC4App *app)
     app->status_y = (WORD)(app->board_y + app->board_h + 16);
     app->chat_y = (WORD)(app->status_y + 16);
 
+    bx = (WORD)(app->board_x + app->board_w + gap);
+    if (bx + 88 > ww - 4)
+        bx = (WORD)(ww - 92);
+    if (bx < app->board_x + app->board_w + 2)
+        bx = (WORD)(app->board_x + app->board_w + 2);
+
     by = top;
-    set_button(&app->buttons[n++], (WORD)(ww - side), by, 88, 16, BTN_NEW, "New"); by += 20;
-    set_button(&app->buttons[n++], (WORD)(ww - side), by, 88, 16, BTN_HOST, "Host"); by += 20;
-    set_button(&app->buttons[n++], (WORD)(ww - side), by, 88, 16, BTN_JOIN, "Join"); by += 20;
-    set_button(&app->buttons[n++], (WORD)(ww - side), by, 88, 16, BTN_DISC, "Disconnect"); by += 20;
-    set_button(&app->buttons[n++], (WORD)(ww - side), by, 88, 16, BTN_CHAT, app->cfg.chat_enabled ? "Chat On" : "Chat Off"); by += 20;
-    set_button(&app->buttons[n++], (WORD)(ww - side), by, 88, 16, BTN_INFO, "Info"); by += 20;
-    set_button(&app->buttons[n++], (WORD)(ww - side), by, 88, 16, BTN_QUIT, "Quit");
+    set_button(&app->buttons[n++], bx, by, 88, 16, BTN_NEW, "New"); by += 20;
+    set_button(&app->buttons[n++], bx, by, 88, 16, BTN_HOST, "Host"); by += 20;
+    set_button(&app->buttons[n++], bx, by, 88, 16, BTN_JOIN, "Join"); by += 20;
+    set_button(&app->buttons[n++], bx, by, 88, 16, BTN_DISC, "Disconnect"); by += 20;
+    set_button(&app->buttons[n++], bx, by, 88, 16, BTN_CHAT, app->cfg.chat_enabled ? "Chat On" : "Chat Off"); by += 20;
+    set_button(&app->buttons[n++], bx, by, 88, 16, BTN_INFO, "Info"); by += 20;
+    set_button(&app->buttons[n++], bx, by, 88, 16, BTN_QUIT, "Quit");
     app->button_count = n;
 }
 
