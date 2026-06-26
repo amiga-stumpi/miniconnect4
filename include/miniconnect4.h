@@ -16,6 +16,7 @@
 #define MC4_NAME_LEN 31
 #define MC4_HOST_LEN 95
 #define MC4_PORT 4544
+#define MC4_DEFAULT_LOBBY "lobby.c64.social"
 
 #define MC4_EMPTY 0
 #define MC4_P1 1
@@ -53,7 +54,7 @@ struct MC4Config {
     WORD win_w;
     WORD win_h;
     char player_name[MC4_NAME_LEN + 1];
-    char host[MC4_HOST_LEN + 1];
+    char lobby[MC4_HOST_LEN + 1];
     UWORD port;
     UBYTE chat_enabled;
     UBYTE animation_enabled;

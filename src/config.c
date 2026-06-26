@@ -38,7 +38,7 @@ void config_defaults(struct MC4Config *cfg)
     cfg->win_w = 390;
     cfg->win_h = 220;
     util_copy(cfg->player_name, sizeof(cfg->player_name), "Player");
-    util_copy(cfg->host, sizeof(cfg->host), "127.0.0.1");
+    util_copy(cfg->lobby, sizeof(cfg->lobby), MC4_DEFAULT_LOBBY);
     cfg->port = MC4_PORT;
     cfg->chat_enabled = 1;
     cfg->animation_enabled = 1;
@@ -91,7 +91,8 @@ void config_load(struct MC4Config *cfg)
         else if (!strcmp(line, "w")) cfg->win_w = (WORD)parse_int(eq, cfg->win_w);
         else if (!strcmp(line, "h")) cfg->win_h = (WORD)parse_int(eq, cfg->win_h);
         else if (!strcmp(line, "name")) util_copy(cfg->player_name, sizeof(cfg->player_name), eq);
-        else if (!strcmp(line, "host")) util_copy(cfg->host, sizeof(cfg->host), eq);
+        else if (!strcmp(line, "lobby")) util_copy(cfg->lobby, sizeof(cfg->lobby), eq);
+        else if (!strcmp(line, "host")) util_copy(cfg->lobby, sizeof(cfg->lobby), eq);
         else if (!strcmp(line, "port")) cfg->port = (UWORD)parse_int(eq, MC4_PORT);
         else if (!strcmp(line, "chat")) cfg->chat_enabled = (UBYTE)parse_int(eq, 1);
         else if (!strcmp(line, "animation")) cfg->animation_enabled = (UBYTE)parse_int(eq, 1);
@@ -119,7 +120,7 @@ void config_save(const struct MC4Config *cfg)
     util_num(n, sizeof(n), cfg->win_w); write_line(f, "w", n);
     util_num(n, sizeof(n), cfg->win_h); write_line(f, "h", n);
     write_line(f, "name", cfg->player_name);
-    write_line(f, "host", cfg->host);
+    write_line(f, "lobby", cfg->lobby);
     util_num(n, sizeof(n), cfg->port); write_line(f, "port", n);
     util_num(n, sizeof(n), cfg->chat_enabled); write_line(f, "chat", n);
     util_num(n, sizeof(n), cfg->animation_enabled); write_line(f, "animation", n);

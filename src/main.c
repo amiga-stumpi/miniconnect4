@@ -10,6 +10,19 @@ ULONG __stack = 32000;
 
 extern void chat_submit(struct MC4App *app);
 
+static int is_default_lobby(const char *s)
+{
+    int i = 0;
+    if (!s || !*s)
+        return 0;
+    while (MC4_DEFAULT_LOBBY[i]) {
+        if (s[i] != MC4_DEFAULT_LOBBY[i])
+            return 0;
+        ++i;
+    }
+    return s[i] == 0;
+}
+
 void app_new_game(struct MC4App *app)
 {
     UBYTE local = app->game.local_player;
@@ -74,7 +87,12 @@ static void do_menu(struct MC4App *app, UWORD menu, UWORD item)
         }
     } else if (menu == MC4_MENU_NETWORK) {
         if (item == MC4_NETWORK_LOBBY) {
-            net_connect_lobby(app, app->cfg.host, app->cfg.port);
+            if (!net_connect_lobby(app, app->cfg.lobby, app->cfg.port)) {
+                if (!is_default_lobby(app->cfg.lobby)) {
+                    gui_set_status(app, "Lobby fallback...");
+                    net_connect_lobby(app, MC4_DEFAULT_LOBBY, app->cfg.port);
+                }
+            }
         } else if (item == MC4_NETWORK_DISCONNECT) {
             net_close(app);
             gui_set_status(app, "Offline local game");
