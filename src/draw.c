@@ -134,23 +134,22 @@ void gui_draw_all(struct MC4App *app)
 
 void gui_animate_drop(struct MC4App *app, int col, int row, UBYTE player)
 {
-    WORD x;
-    WORD y;
-    WORD target;
-    WORD r;
+    int step;
+    int previous = -1;
 
     if (!app->cfg.animation_enabled) {
         gui_draw_cell(app, row, col, player);
         return;
     }
 
-    x = (WORD)(app->board_x + col * app->cell + app->cell / 2);
-    target = (WORD)(app->board_y + row * app->cell + app->cell / 2);
-    r = (WORD)((app->cell / 2) - 3);
-    for (y = (WORD)(app->board_y + app->cell / 2); y < target; y += 4) {
-        gui_draw_cell(app, (y - app->board_y) / app->cell, col, MC4_EMPTY);
-        draw_disc(app, x, y, r, player);
+    for (step = 0; step <= row; ++step) {
+        if (previous >= 0)
+            gui_draw_cell(app, previous, col, MC4_EMPTY);
+        if (step == row)
+            gui_draw_cell(app, row, col, player);
+        else
+            gui_draw_cell(app, step, col, player);
+        previous = step;
         Delay(1);
     }
-    gui_draw_cell(app, row, col, player);
 }
