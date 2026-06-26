@@ -73,6 +73,8 @@ void gui_enforce_aspect(struct MC4App *app)
     WORD dh;
     WORD target_w;
     WORD target_h;
+    WORD max_w;
+    WORD max_h;
 
     if (!app->win)
         return;
@@ -102,6 +104,30 @@ void gui_enforce_aspect(struct MC4App *app)
     else
         target_w = (WORD)(((LONG)h * 390L + 110L) / 220L);
 
+    if (target_w < 300)
+        target_w = 300;
+    if (target_h < 180)
+        target_h = 180;
+
+    max_w = 640;
+    max_h = 256;
+    if (app->screen) {
+        max_w = (WORD)(app->screen->Width - app->win->LeftEdge - 2);
+        max_h = (WORD)(app->screen->Height - app->win->TopEdge - 2);
+    }
+    if (max_w < 300)
+        max_w = 300;
+    if (max_h < 180)
+        max_h = 180;
+
+    if (target_h > max_h) {
+        target_h = max_h;
+        target_w = (WORD)(((LONG)target_h * 390L + 110L) / 220L);
+    }
+    if (target_w > max_w) {
+        target_w = max_w;
+        target_h = (WORD)(((LONG)target_w * 220L + 195L) / 390L);
+    }
     if (target_w < 300)
         target_w = 300;
     if (target_h < 180)
