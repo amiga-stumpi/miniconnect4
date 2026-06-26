@@ -1,4 +1,5 @@
 #include "miniconnect4.h"
+#include "sound.h"
 #include <string.h>
 
 static int same_name(const char *a, const char *b)
@@ -71,6 +72,7 @@ void protocol_handle_line(struct MC4App *app, const char *line)
         return;
     }
     if (util_starts(line, "INVITE ")) {
+        sound_play(MC4_SOUND_INVITE);
         util_copy(msg, sizeof(msg), "Anfrage von ");
         util_append(msg, sizeof(msg), line + 7);
         gui_add_chat(app, msg);
@@ -114,6 +116,7 @@ void protocol_handle_line(struct MC4App *app, const char *line)
         if (*p == ' ')
             ++p;
         role = p;
+        sound_play(MC4_SOUND_START);
         game_init(&app->game);
         app->invite_pending = 0;
         app->invite_wait_ticks = 0;

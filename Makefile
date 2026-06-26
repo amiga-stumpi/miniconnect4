@@ -4,7 +4,7 @@ LDFLAGS=-mcrt=nix13
 BUILD=build
 TARGET=$(BUILD)/MiniConnect4
 SERVER_TARGET=$(BUILD)/miniconnect4-lobby-server
-OBJS=$(BUILD)/main.o $(BUILD)/util.o $(BUILD)/config.o $(BUILD)/game.o $(BUILD)/gui.o $(BUILD)/draw.o $(BUILD)/net.o $(BUILD)/protocol.o $(BUILD)/chat.o
+OBJS=$(BUILD)/main.o $(BUILD)/util.o $(BUILD)/config.o $(BUILD)/game.o $(BUILD)/gui.o $(BUILD)/draw.o $(BUILD)/net.o $(BUILD)/protocol.o $(BUILD)/chat.o $(BUILD)/sound.o $(BUILD)/sound_data.o
 
 .PHONY: all clean server
 

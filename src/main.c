@@ -5,6 +5,7 @@
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include "miniconnect4.h"
+#include "sound.h"
 
 #ifndef IEQUALIFIER_LSHIFT
 #define IEQUALIFIER_LSHIFT 0x0001
@@ -79,16 +80,20 @@ void app_local_move(struct MC4App *app, int col, int send_net)
         return;
     }
     gui_animate_drop(app, col, row, player);
+    sound_play(MC4_SOUND_MOVE);
     if (send_net && app->net_state == MC4_NET_CONNECTED) {
         net_send_move(app, col);
         sent_net = 1;
     }
     if (game_check_winner(&app->game, row, col)) {
         if (app->net_state == MC4_NET_CONNECTED) {
-            if (player == app->game.local_player)
+            if (player == app->game.local_player) {
                 gui_set_status(app, "Du hast gewonnen!");
-            else
+                sound_play(MC4_SOUND_WIN);
+            } else {
                 gui_set_status(app, "Leider verloren!");
+                sound_play(MC4_SOUND_LOSE);
+            }
         } else {
             util_copy(msg, sizeof(msg), "Player ");
             util_append(msg, sizeof(msg), player == MC4_P1 ? "1 wins" : "2 wins");
@@ -296,6 +301,8 @@ int main(void)
     app.view = MC4_VIEW_GAME;
     util_copy(app.status, sizeof(app.status), "Offline local game");
 
+    sound_init();
+
     if (!gui_open(&app)) {
         Write(Output(), "MiniConnect4: window open failed\n", 33);
         return 20;
@@ -305,6 +312,7 @@ int main(void)
     config_save(&app.cfg);
     net_close(&app);
     net_shutdown();
+    sound_shutdown();
     gui_close(&app);
     return 0;
 }
