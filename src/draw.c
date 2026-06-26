@@ -43,7 +43,7 @@ static void draw_disc(struct MC4App *app, WORD cx, WORD cy, WORD r, UBYTE value)
                 WritePixel(rp, cx + x, cy + y);
         }
     }
-    SetAPen(rp, app->cfg.pen_text);
+    SetAPen(rp, app->cfg.pen_board);
     for (x = -r; x <= r; ++x) {
         WritePixel(rp, cx + x, cy - r);
         WritePixel(rp, cx + x, cy + r);
