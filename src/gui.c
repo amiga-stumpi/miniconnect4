@@ -38,15 +38,10 @@ void gui_layout(struct MC4App *app)
 
     app->board_x = 6;
     app->board_y = top;
-    if (app->cfg.chat_enabled) {
-        app->chat_y = (WORD)(wh - chat_h);
-        if (app->chat_y < top + 80)
-            app->chat_y = (WORD)(top + 80);
-        app->status_y = (WORD)(app->chat_y - 20);
-    } else {
-        app->status_y = (WORD)(wh - 12);
-        app->chat_y = (WORD)(wh + 10);
-    }
+    app->chat_y = (WORD)(wh - chat_h);
+    if (app->chat_y < top + 80)
+        app->chat_y = (WORD)(top + 80);
+    app->status_y = (WORD)(app->chat_y - 20);
     avail_h = (WORD)(app->status_y - app->board_y - 14);
 
     if (avail_w < MC4_COLS * min_cell)

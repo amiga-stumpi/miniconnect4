@@ -125,8 +125,6 @@ void gui_draw_chat(struct MC4App *app)
     WORD chat_bottom;
     WORD input_y;
 
-    if (!app->cfg.chat_enabled)
-        return;
     ww = app->win->GZZWidth ? app->win->GZZWidth : app->win->Width;
     chat_bottom = (WORD)(app->chat_y + (MC4_CHAT_LINES * 10) + 16);
     input_y = (WORD)(app->chat_y + (MC4_CHAT_LINES * 10) + 4);

@@ -119,6 +119,7 @@ void config_load(struct MC4Config *cfg)
     Close(f);
     if (!cfg->player_name[0] || is_plain_player_name(cfg->player_name))
         config_make_default_name(cfg->player_name, sizeof(cfg->player_name));
+    cfg->chat_enabled = 1;
 }
 
 static void write_line(BPTR f, const char *key, const char *value)
