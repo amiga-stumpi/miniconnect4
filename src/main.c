@@ -39,6 +39,7 @@ void app_local_move(struct MC4App *app, int col, int send_net)
     WORD row;
     UBYTE player;
     char msg[64];
+    int sent_net = 0;
 
     if (app->game.game_over)
         return;
@@ -52,6 +53,10 @@ void app_local_move(struct MC4App *app, int col, int send_net)
         return;
     }
     gui_animate_drop(app, col, row, player);
+    if (send_net && app->net_state == MC4_NET_CONNECTED) {
+        net_send_move(app, col);
+        sent_net = 1;
+    }
     if (game_check_winner(&app->game, row, col)) {
         util_copy(msg, sizeof(msg), "Player ");
         util_append(msg, sizeof(msg), player == MC4_P1 ? "1 wins" : "2 wins");
@@ -60,8 +65,7 @@ void app_local_move(struct MC4App *app, int col, int send_net)
         gui_set_status(app, "Draw");
     } else {
         game_switch_player(&app->game);
-        if (send_net && app->net_state == MC4_NET_CONNECTED) {
-            net_send_move(app, col);
+        if (sent_net) {
             app->my_turn = 0;
             gui_set_status(app, "Remote turn");
         } else {

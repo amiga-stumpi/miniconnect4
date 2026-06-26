@@ -56,6 +56,12 @@ void protocol_handle_line(struct MC4App *app, const char *line)
         gui_set_status(app, "Connected");
         return;
     }
+    if (util_starts(line, "NAMETAKEN ")) {
+        gui_set_status(app, "Name in use - choose another");
+        net_close(app);
+        gui_edit_player_name(app);
+        return;
+    }
     if (util_starts(line, "USERS ")) {
         parse_users(app, line + 6);
         return;
@@ -110,8 +116,10 @@ void protocol_handle_line(struct MC4App *app, const char *line)
         col = line[5] - '0';
         if (col >= 0 && col < MC4_COLS) {
             app_local_move(app, col, 0);
-            app->my_turn = 1;
-            gui_set_status(app, "Your turn");
+            if (!app->game.game_over) {
+                app->my_turn = 1;
+                gui_set_status(app, "Your turn");
+            }
         }
         return;
     }

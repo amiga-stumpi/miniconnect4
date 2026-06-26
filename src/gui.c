@@ -316,7 +316,7 @@ void gui_edit_player_name(struct MC4App *app)
 
     if (accept) {
         if (!buf[0])
-            util_copy(buf, sizeof(buf), "Player");
+            config_make_default_name(buf, sizeof(buf));
         util_copy(app->cfg.player_name, sizeof(app->cfg.player_name), buf);
         config_save(&app->cfg);
         gui_set_status(app, "Player name saved");

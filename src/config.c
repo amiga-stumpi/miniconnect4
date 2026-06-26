@@ -31,13 +31,32 @@ static void trim_cr(char *s)
     }
 }
 
+static int is_plain_player_name(const char *s)
+{
+    return s && strcmp(s, "Player") == 0;
+}
+
+void config_make_default_name(char *dst, int max_len)
+{
+    struct DateStamp ds;
+    LONG n;
+
+    DateStamp(&ds);
+    n = (ds.ds_Tick + ds.ds_Minute * 37 + ds.ds_Days * 17) % 9000;
+    if (n < 0)
+        n = -n;
+    util_copy(dst, max_len, "Player");
+    util_num(dst + util_len(dst), max_len - util_len(dst), n + 1000);
+}
+
+
 void config_defaults(struct MC4Config *cfg)
 {
     cfg->win_x = 20;
     cfg->win_y = 12;
     cfg->win_w = 390;
     cfg->win_h = 220;
-    util_copy(cfg->player_name, sizeof(cfg->player_name), "Player");
+    config_make_default_name(cfg->player_name, sizeof(cfg->player_name));
     util_copy(cfg->lobby, sizeof(cfg->lobby), MC4_DEFAULT_LOBBY);
     cfg->port = MC4_PORT;
     cfg->chat_enabled = 1;
@@ -98,6 +117,8 @@ void config_load(struct MC4Config *cfg)
         else if (!strcmp(line, "animation")) cfg->animation_enabled = (UBYTE)parse_int(eq, 1);
     }
     Close(f);
+    if (!cfg->player_name[0] || is_plain_player_name(cfg->player_name))
+        config_make_default_name(cfg->player_name, sizeof(cfg->player_name));
 }
 
 static void write_line(BPTR f, const char *key, const char *value)

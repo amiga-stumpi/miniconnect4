@@ -116,6 +116,7 @@ int util_starts(const char *s, const char *prefix);
 void util_append(char *dst, int max_len, const char *src);
 void util_num(char *dst, int max_len, LONG v);
 
+void config_make_default_name(char *dst, int max_len);
 void config_defaults(struct MC4Config *cfg);
 void config_load(struct MC4Config *cfg);
 void config_save(const struct MC4Config *cfg);

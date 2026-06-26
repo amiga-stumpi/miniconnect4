@@ -90,6 +90,15 @@ static int find_name(const char *name)
     return -1;
 }
 
+static int find_name_except(const char *name, int except)
+{
+    int i;
+    for (i = 0; i < MAX_CLIENTS; ++i)
+        if (i != except && clients[i].fd >= 0 && strcmp(clients[i].name, name) == 0)
+            return i;
+    return -1;
+}
+
 static void broadcast_users(void)
 {
     char line[BUF_LEN];
@@ -169,9 +178,18 @@ static void handle_line(int idx, char *line)
     if (strncmp(line, "HELLO ", 6) == 0) {
         send_line(clients[idx].fd, "HELLO MiniConnect4Lobby");
     } else if (strncmp(line, "NAME ", 5) == 0) {
-        snprintf(clients[idx].name, sizeof(clients[idx].name), "%.31s", line + 5);
-        if (!clients[idx].name[0])
-            strcpy(clients[idx].name, "Player");
+        char wanted[NAME_LEN + 1];
+        char reply[BUF_LEN];
+        snprintf(wanted, sizeof(wanted), "%.31s", line + 5);
+        if (!wanted[0])
+            strcpy(wanted, "Player");
+        if (find_name_except(wanted, idx) >= 0) {
+            snprintf(reply, sizeof(reply), "NAMETAKEN %.31s", wanted);
+            send_line(clients[idx].fd, reply);
+            close_client(idx);
+            return;
+        }
+        strcpy(clients[idx].name, wanted);
         broadcast_users();
     } else if (strncmp(line, "LOBBYCHAT ", 10) == 0) {
         lobby_chat(idx, line + 10);
