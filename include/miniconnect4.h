@@ -11,6 +11,7 @@
 #define MC4_COLS 7
 #define MC4_ROWS 6
 #define MC4_CHAT_LINES 4
+#define MC4_LOBBY_MAX_PLAYERS 16
 #define MC4_CHAT_LEN 96
 #define MC4_NAME_LEN 31
 #define MC4_HOST_LEN 95
@@ -23,6 +24,7 @@
 #define MC4_MODE_LOCAL 0
 #define MC4_MODE_HOST 1
 #define MC4_MODE_CLIENT 2
+#define MC4_MODE_LOBBY 3
 
 #define MC4_NET_OFFLINE 0
 #define MC4_NET_LISTENING 1
@@ -36,12 +38,14 @@
 
 #define MC4_PROJECT_NEW 0
 #define MC4_PROJECT_QUIT 1
-#define MC4_NETWORK_HOST 0
-#define MC4_NETWORK_JOIN 1
-#define MC4_NETWORK_DISCONNECT 2
+#define MC4_NETWORK_LOBBY 0
+#define MC4_NETWORK_DISCONNECT 1
 #define MC4_OPTIONS_NAME 0
 #define MC4_OPTIONS_CHAT 1
 #define MC4_HELP_INFO 0
+
+#define MC4_VIEW_GAME 0
+#define MC4_VIEW_LOBBY 1
 
 struct MC4Config {
     WORD win_x;
@@ -66,6 +70,11 @@ struct MC4Game {
     WORD last_row;
 };
 
+struct MC4LobbyPlayer {
+    char name[MC4_NAME_LEN + 1];
+    UBYTE busy;
+};
+
 struct MC4App {
     struct Window *win;
     struct Screen *screen;
@@ -83,6 +92,9 @@ struct MC4App {
     WORD chat_y;
     char status[128];
     char remote_name[MC4_NAME_LEN + 1];
+    struct MC4LobbyPlayer lobby_players[MC4_LOBBY_MAX_PLAYERS];
+    UBYTE lobby_count;
+    UBYTE view;
     char chat_lines[MC4_CHAT_LINES][MC4_CHAT_LEN];
     UBYTE chat_count;
     char chat_input[MC4_CHAT_LEN];
@@ -120,9 +132,11 @@ void gui_draw_all(struct MC4App *app);
 void gui_enforce_aspect(struct MC4App *app);
 void gui_draw_status(struct MC4App *app);
 void gui_draw_chat(struct MC4App *app);
+void gui_draw_lobby(struct MC4App *app);
 void gui_draw_cell(struct MC4App *app, int row, int col, UBYTE value);
 void gui_animate_drop(struct MC4App *app, int col, int row, UBYTE player);
 int gui_hit_column(struct MC4App *app, WORD x, WORD y);
+int gui_hit_lobby_player(struct MC4App *app, WORD x, WORD y);
 void gui_set_status(struct MC4App *app, const char *s);
 void gui_add_chat(struct MC4App *app, const char *s);
 void gui_info(struct MC4App *app);
@@ -131,12 +145,13 @@ void gui_edit_player_name(struct MC4App *app);
 int net_init(void);
 void net_shutdown(void);
 void net_close(struct MC4App *app);
-int net_host(struct MC4App *app);
-int net_connect(struct MC4App *app, const char *host, UWORD port);
+int net_connect_lobby(struct MC4App *app, const char *host, UWORD port);
 void net_poll(struct MC4App *app);
 int net_send_move(struct MC4App *app, int col);
 int net_send_chat(struct MC4App *app, const char *text);
 int net_send_newgame(struct MC4App *app);
+int net_send_lobby_chat(struct MC4App *app, const char *text);
+int net_send_invite(struct MC4App *app, const char *name);
 
 void protocol_handle_line(struct MC4App *app, const char *line);
 void app_new_game(struct MC4App *app);

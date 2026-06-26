@@ -14,7 +14,6 @@
 #endif
 
 struct Library *SocketBase = 0;
-static int g_listen_fd = -1;
 static int g_fd = -1;
 static char g_inbuf[NET_BUF];
 static int g_inlen;
@@ -50,13 +49,11 @@ void net_close(struct MC4App *app)
         CloseSocket(g_fd);
         g_fd = -1;
     }
-    if (g_listen_fd >= 0) {
-        CloseSocket(g_listen_fd);
-        g_listen_fd = -1;
-    }
     g_inlen = 0;
     app->net_state = MC4_NET_OFFLINE;
     app->net_mode = MC4_MODE_LOCAL;
+    app->view = MC4_VIEW_GAME;
+    app->lobby_count = 0;
     app->my_turn = 1;
 }
 
@@ -81,39 +78,7 @@ static void send_name(struct MC4App *app)
     send_line(line);
 }
 
-int net_host(struct MC4App *app)
-{
-    struct sockaddr_in sa;
-    if (!net_init()) {
-        gui_set_status(app, "bsdsocket.library not found");
-        return 0;
-    }
-    net_close(app);
-    g_listen_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (g_listen_fd < 0) {
-        gui_set_status(app, "socket failed");
-        return 0;
-    }
-    memset(&sa, 0, sizeof(sa));
-    sa.sin_family = AF_INET;
-    sa.sin_port = htons(app->cfg.port);
-    sa.sin_addr.s_addr = 0;
-    if (bind(g_listen_fd, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
-        gui_set_status(app, "bind failed");
-        net_close(app);
-        return 0;
-    }
-    listen(g_listen_fd, 1);
-    make_nonblock(g_listen_fd);
-    app->net_mode = MC4_MODE_HOST;
-    app->net_state = MC4_NET_LISTENING;
-    app->game.local_player = MC4_P1;
-    app->my_turn = 1;
-    gui_set_status(app, "Hosting: waiting for player");
-    return 1;
-}
-
-int net_connect(struct MC4App *app, const char *host, UWORD port)
+int net_connect_lobby(struct MC4App *app, const char *host, UWORD port)
 {
     struct hostent *he;
     struct sockaddr_in sa;
@@ -142,13 +107,15 @@ int net_connect(struct MC4App *app, const char *host, UWORD port)
         return 0;
     }
     make_nonblock(g_fd);
-    app->net_mode = MC4_MODE_CLIENT;
+    app->net_mode = MC4_MODE_LOBBY;
     app->net_state = MC4_NET_CONNECTED;
-    app->game.local_player = MC4_P2;
+    app->view = MC4_VIEW_LOBBY;
     app->my_turn = 0;
     send_line("HELLO MiniConnect4");
     send_name(app);
-    gui_set_status(app, "Connected: remote turn");
+    gui_set_status(app, "Lobby connected");
+    gui_layout(app);
+    gui_draw_all(app);
     return 1;
 }
 
@@ -173,21 +140,6 @@ void net_poll(struct MC4App *app)
 {
     char buf[64];
     int n;
-    if (app->net_state == MC4_NET_LISTENING && g_listen_fd >= 0) {
-        g_fd = accept(g_listen_fd, 0, 0);
-        if (g_fd >= 0) {
-            CloseSocket(g_listen_fd);
-            g_listen_fd = -1;
-            make_nonblock(g_fd);
-            app->net_state = MC4_NET_CONNECTED;
-            app->net_mode = MC4_MODE_HOST;
-            app->game.local_player = MC4_P1;
-            app->my_turn = 1;
-            send_line("HELLO MiniConnect4");
-            send_name(app);
-            gui_set_status(app, "Connected: your turn");
-        }
-    }
     if (app->net_state != MC4_NET_CONNECTED || g_fd < 0)
         return;
     for (;;) {
@@ -222,6 +174,26 @@ int net_send_chat(struct MC4App *app, const char *text)
         return 0;
     util_copy(line, sizeof(line), "CHAT ");
     util_append(line, sizeof(line), text);
+    return send_line(line);
+}
+
+int net_send_lobby_chat(struct MC4App *app, const char *text)
+{
+    char line[NET_BUF];
+    if (app->net_state != MC4_NET_CONNECTED)
+        return 0;
+    util_copy(line, sizeof(line), "LOBBYCHAT ");
+    util_append(line, sizeof(line), text);
+    return send_line(line);
+}
+
+int net_send_invite(struct MC4App *app, const char *name)
+{
+    char line[NET_BUF];
+    if (app->net_state != MC4_NET_CONNECTED)
+        return 0;
+    util_copy(line, sizeof(line), "INVITE ");
+    util_append(line, sizeof(line), name);
     return send_line(line);
 }
 

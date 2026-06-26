@@ -8,7 +8,10 @@ void chat_submit(struct MC4App *app)
     util_copy(line, sizeof(line), "Me: ");
     util_append(line, sizeof(line), app->chat_input);
     gui_add_chat(app, line);
-    net_send_chat(app, app->chat_input);
+    if (app->view == MC4_VIEW_LOBBY)
+        net_send_lobby_chat(app, app->chat_input);
+    else
+        net_send_chat(app, app->chat_input);
     app->chat_input[0] = 0;
     app->chat_len = 0;
     gui_draw_chat(app);

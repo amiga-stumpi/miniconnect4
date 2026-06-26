@@ -73,12 +73,8 @@ static void do_menu(struct MC4App *app, UWORD menu, UWORD item)
             app->running = 0;
         }
     } else if (menu == MC4_MENU_NETWORK) {
-        if (item == MC4_NETWORK_HOST) {
-            app_new_game(app);
-            net_host(app);
-        } else if (item == MC4_NETWORK_JOIN) {
-            app_new_game(app);
-            net_connect(app, app->cfg.host, app->cfg.port);
+        if (item == MC4_NETWORK_LOBBY) {
+            net_connect_lobby(app, app->cfg.host, app->cfg.port);
         } else if (item == MC4_NETWORK_DISCONNECT) {
             net_close(app);
             gui_set_status(app, "Offline local game");
@@ -138,6 +134,7 @@ static void event_loop(struct MC4App *app)
     UWORD code;
     WORD mx, my;
     int col;
+    int player;
 
     sigmask = 1L << app->win->UserPort->mp_SigBit;
     (void)sigmask;
@@ -162,9 +159,15 @@ static void event_loop(struct MC4App *app)
                 gui_draw_all(app);
                 EndRefresh(app->win, TRUE);
             } else if (classv == IDCMP_MOUSEBUTTONS && code == SELECTDOWN) {
-                col = gui_hit_column(app, mx, my);
-                if (col >= 0)
-                    app_local_move(app, col, 1);
+                player = gui_hit_lobby_player(app, mx, my);
+                if (player >= 0) {
+                    net_send_invite(app, app->lobby_players[player].name);
+                    gui_set_status(app, "Challenge sent");
+                } else {
+                    col = gui_hit_column(app, mx, my);
+                    if (col >= 0)
+                        app_local_move(app, col, 1);
+                }
             } else if (classv == IDCMP_RAWKEY) {
                 handle_key(app, code);
             } else if (classv == IDCMP_MENUPICK) {
@@ -189,6 +192,7 @@ int main(void)
     game_init(&app.game);
     app.running = 1;
     app.my_turn = 1;
+    app.view = MC4_VIEW_GAME;
     util_copy(app.status, sizeof(app.status), "Offline local game");
 
     if (!gui_open(&app)) {

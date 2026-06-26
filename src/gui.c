@@ -7,8 +7,7 @@
 
 static struct IntuiText txt_new = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"New Game", 0 };
 static struct IntuiText txt_quit = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Quit", 0 };
-static struct IntuiText txt_host = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Host Game", 0 };
-static struct IntuiText txt_join = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Join Game", 0 };
+static struct IntuiText txt_lobby = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Lobby", 0 };
 static struct IntuiText txt_disconnect = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Disconnect", 0 };
 static struct IntuiText txt_player_name = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Player Name...", 0 };
 static struct IntuiText txt_chat = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Toggle Chat", 0 };
@@ -16,16 +15,15 @@ static struct IntuiText txt_info = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Info", 0 };
 
 static struct MenuItem item_project_quit = { 0, 0, 10, 92, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_quit, 0, 0, 0, 0 };
 static struct MenuItem item_project_new = { &item_project_quit, 0, 0, 92, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_new, 0, 0, 0, 0 };
-static struct MenuItem item_network_disconnect = { 0, 0, 20, 112, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_disconnect, 0, 0, 0, 0 };
-static struct MenuItem item_network_join = { &item_network_disconnect, 0, 10, 112, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_join, 0, 0, 0, 0 };
-static struct MenuItem item_network_host = { &item_network_join, 0, 0, 112, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_host, 0, 0, 0, 0 };
+static struct MenuItem item_network_disconnect = { 0, 0, 10, 112, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_disconnect, 0, 0, 0, 0 };
+static struct MenuItem item_network_lobby = { &item_network_disconnect, 0, 0, 112, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_lobby, 0, 0, 0, 0 };
 static struct MenuItem item_options_chat = { 0, 0, 10, 112, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_chat, 0, 0, 0, 0 };
 static struct MenuItem item_options_name = { &item_options_chat, 0, 0, 112, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_player_name, 0, 0, 0, 0 };
 static struct MenuItem item_help_info = { 0, 0, 0, 60, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_info, 0, 0, 0, 0 };
 
 static struct Menu menu_help = { 0, 196, 0, 16, 10, MENUENABLED, (UBYTE *)"?", &item_help_info, 0, 0, 0, 0 };
 static struct Menu menu_options = { &menu_help, 120, 0, 76, 10, MENUENABLED, (UBYTE *)"Options", &item_options_name, 0, 0, 0, 0 };
-static struct Menu menu_network = { &menu_options, 54, 0, 66, 10, MENUENABLED, (UBYTE *)"Network", &item_network_host, 0, 0, 0, 0 };
+static struct Menu menu_network = { &menu_options, 54, 0, 66, 10, MENUENABLED, (UBYTE *)"Network", &item_network_lobby, 0, 0, 0, 0 };
 static struct Menu menu_project = { &menu_network, 0, 0, 54, 10, MENUENABLED, (UBYTE *)"Project", &item_project_new, 0, 0, 0, 0 };
 
 void gui_layout(struct MC4App *app)
@@ -134,11 +132,30 @@ void gui_close(struct MC4App *app)
 
 int gui_hit_column(struct MC4App *app, WORD x, WORD y)
 {
+    if (app->view != MC4_VIEW_GAME)
+        return -1;
     if (x < app->board_x || x >= app->board_x + app->board_w)
         return -1;
     if (y < app->board_y || y >= app->board_y + app->board_h)
         return -1;
     return (x - app->board_x) / app->cell_w;
+}
+
+int gui_hit_lobby_player(struct MC4App *app, WORD x, WORD y)
+{
+    int idx;
+    if (app->view != MC4_VIEW_LOBBY)
+        return -1;
+    if (x < app->board_x || x >= app->board_x + app->board_w)
+        return -1;
+    if (y < app->board_y + 21 || y >= app->board_y + app->board_h)
+        return -1;
+    idx = (y - (app->board_y + 21)) / 13;
+    if (idx < 0 || idx >= app->lobby_count)
+        return -1;
+    if (app->lobby_players[idx].busy)
+        return -1;
+    return idx;
 }
 
 void gui_set_status(struct MC4App *app, const char *s)

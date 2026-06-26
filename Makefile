@@ -3,9 +3,10 @@ CFLAGS=-Os -Wall -Wextra -fomit-frame-pointer -mcrt=nix13 -fno-builtin -DAMIGA_O
 LDFLAGS=-mcrt=nix13
 BUILD=build
 TARGET=$(BUILD)/MiniConnect4
+SERVER_TARGET=$(BUILD)/miniconnect4-lobby-server
 OBJS=$(BUILD)/main.o $(BUILD)/util.o $(BUILD)/config.o $(BUILD)/game.o $(BUILD)/gui.o $(BUILD)/draw.o $(BUILD)/net.o $(BUILD)/protocol.o $(BUILD)/chat.o
 
-.PHONY: all clean
+.PHONY: all clean server
 
 all: $(TARGET)
 
@@ -17,6 +18,11 @@ $(BUILD)/%.o: src/%.c | $(BUILD)
 
 $(TARGET): $(OBJS)
 	$(CC) $(LDFLAGS) -o $@ $(OBJS)
+
+server: $(SERVER_TARGET)
+
+$(SERVER_TARGET): server/miniconnect4_lobby_server.c | $(BUILD)
+	cc -O2 -Wall -Wextra -o $@ $<
 
 clean:
 	rm -rf $(BUILD)

@@ -79,6 +79,36 @@ static void draw_board(struct MC4App *app)
                app->board_x + app->board_w, app->board_y + app->board_h, PEN_TEXT);
 }
 
+void gui_draw_lobby(struct MC4App *app)
+{
+    int i;
+    WORD y;
+    char line[80];
+    WORD ww = app->win->GZZWidth ? app->win->GZZWidth : app->win->Width;
+
+    fill_rect(app->rp, app->board_x, app->board_y,
+              app->board_x + app->board_w, app->board_y + app->board_h, PEN_BG);
+    frame_rect(app->rp, app->board_x, app->board_y,
+               app->board_x + app->board_w, app->board_y + app->board_h, PEN_TEXT);
+    draw_text(app->rp, app->board_x + 8, app->board_y + 14, "Lobby - available players", PEN_TEXT);
+    y = (WORD)(app->board_y + 30);
+    if (app->lobby_count == 0) {
+        draw_text(app->rp, app->board_x + 8, y, "No other players online", PEN_TEXT);
+        return;
+    }
+    for (i = 0; i < app->lobby_count; ++i) {
+        if (y > app->board_y + app->board_h - 10)
+            break;
+        util_copy(line, sizeof(line), app->lobby_players[i].name);
+        util_append(line, sizeof(line), app->lobby_players[i].busy ? "  (in game)" : "  (click to play)");
+        if (!app->lobby_players[i].busy)
+            fill_rect(app->rp, app->board_x + 4, y - 9, ww - 12, y + 3, PEN_BOARD);
+        draw_text(app->rp, app->board_x + 8, y, line, PEN_TEXT);
+        y += 13;
+    }
+}
+
+
 void gui_draw_status(struct MC4App *app)
 {
     WORD ww = app->win->GZZWidth ? app->win->GZZWidth : app->win->Width;
@@ -113,7 +143,10 @@ void gui_draw_all(struct MC4App *app)
         WORD wh = app->win->GZZHeight ? app->win->GZZHeight : app->win->Height;
         fill_rect(app->rp, 0, 0, ww - 1, wh - 1, PEN_BG);
     }
-    draw_board(app);
+    if (app->view == MC4_VIEW_LOBBY)
+        gui_draw_lobby(app);
+    else
+        draw_board(app);
     gui_draw_status(app);
     gui_draw_chat(app);
 }

@@ -36,4 +36,21 @@ build/MiniConnect4
 ## Config
 
 A default config is created/saved as `MiniConnect4.conf` in the current directory.
-Edit `host=` to set the remote host used by `Network -> Join Game`.
+Edit `host=` and `port=` to set the lobby server used by `Network -> Lobby`.
+
+
+## Lobby server
+
+Build the Linux lobby server with:
+
+```sh
+make server
+```
+
+Run it with:
+
+```sh
+build/miniconnect4-lobby-server 4544
+```
+
+MiniConnect4 clients connect through `Network -> Lobby`. Idle players can chat in the lobby and click another idle player to start a game.
