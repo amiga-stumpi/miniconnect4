@@ -53,4 +53,10 @@ Run it with:
 build/miniconnect4-lobby-server 4544
 ```
 
+Run it in the background with:
+
+```sh
+build/miniconnect4-lobby-server -D 4544
+```
+
 MiniConnect4 clients connect through `Network -> Lobby`. Idle players can chat in the lobby and click another idle player to start a game.

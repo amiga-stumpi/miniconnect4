@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <signal.h>
+#include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,6 +26,43 @@ struct Client {
 };
 
 static struct Client clients[MAX_CLIENTS];
+
+
+static int daemonize(void)
+{
+    pid_t pid;
+    int fd;
+
+    pid = fork();
+    if (pid < 0)
+        return 0;
+    if (pid > 0)
+        exit(0);
+
+    if (setsid() < 0)
+        return 0;
+
+    signal(SIGHUP, SIG_IGN);
+    pid = fork();
+    if (pid < 0)
+        return 0;
+    if (pid > 0)
+        exit(0);
+
+    umask(0);
+    if (chdir("/") < 0)
+        return 0;
+
+    fd = open("/dev/null", O_RDWR);
+    if (fd >= 0) {
+        dup2(fd, STDIN_FILENO);
+        dup2(fd, STDOUT_FILENO);
+        dup2(fd, STDERR_FILENO);
+        if (fd > STDERR_FILENO)
+            close(fd);
+    }
+    return 1;
+}
 
 static void send_line(int fd, const char *line)
 {
@@ -172,7 +210,9 @@ static void handle_bytes(int idx, char *buf, int n)
 
 int main(int argc, char **argv)
 {
-    int port = argc > 1 ? atoi(argv[1]) : DEFAULT_PORT;
+    int port = DEFAULT_PORT;
+    int daemon_mode = 0;
+    int argi;
     int listen_fd;
     int i, idx, maxfd, fd;
     int opt = 1;
@@ -180,7 +220,24 @@ int main(int argc, char **argv)
     struct sockaddr_in sa;
     fd_set rfds;
 
+    for (argi = 1; argi < argc; ++argi) {
+        if (strcmp(argv[argi], "-D") == 0)
+            daemon_mode = 1;
+        else if (strcmp(argv[argi], "-h") == 0 || strcmp(argv[argi], "--help") == 0) {
+            printf("usage: %s [-D] [port]\n", argv[0]);
+            return 0;
+        } else
+            port = atoi(argv[argi]);
+    }
+    if (port <= 0)
+        port = DEFAULT_PORT;
+
     signal(SIGPIPE, SIG_IGN);
+    if (daemon_mode && !daemonize()) {
+        perror("daemonize");
+        return 1;
+    }
+
     for (i = 0; i < MAX_CLIENTS; ++i) {
         clients[i].fd = -1;
         clients[i].peer = -1;
@@ -204,7 +261,8 @@ int main(int argc, char **argv)
         perror("listen");
         return 1;
     }
-    printf("MiniConnect4 lobby server listening on port %d\n", port);
+    if (!daemon_mode)
+        printf("MiniConnect4 lobby server listening on port %d\n", port);
 
     for (;;) {
         FD_ZERO(&rfds);
