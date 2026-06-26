@@ -148,8 +148,8 @@ static void event_loop(struct MC4App *app)
         while ((msg = (struct IntuiMessage *)GetMsg(app->win->UserPort))) {
             classv = msg->Class;
             code = msg->Code;
-            mx = msg->MouseX;
-            my = msg->MouseY;
+            mx = app->win->GZZMouseX;
+            my = app->win->GZZMouseY;
             ReplyMsg((struct Message *)msg);
             if (classv == IDCMP_CLOSEWINDOW) {
                 app->running = 0;

@@ -30,8 +30,8 @@ static struct Menu menu_project = { &menu_network, 0, 0, 54, 10, MENUENABLED, (U
 
 void gui_layout(struct MC4App *app)
 {
-    WORD ww = app->win->Width;
-    WORD wh = app->win->Height;
+    WORD ww = app->win->GZZWidth ? app->win->GZZWidth : app->win->Width;
+    WORD wh = app->win->GZZHeight ? app->win->GZZHeight : app->win->Height;
     WORD top = 8;
     WORD bottom = 42;
     WORD avail_w = (WORD)(ww - 12);
@@ -88,7 +88,7 @@ int gui_open(struct MC4App *app)
         nw.DetailPen = 0;
         nw.BlockPen = 1;
         nw.IDCMPFlags = IDCMP_CLOSEWINDOW | IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY | IDCMP_NEWSIZE | IDCMP_REFRESHWINDOW | IDCMP_MENUPICK;
-        nw.Flags = WFLG_CLOSEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_SMART_REFRESH | WFLG_ACTIVATE;
+        nw.Flags = WFLG_CLOSEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_SMART_REFRESH | WFLG_ACTIVATE | WFLG_GIMMEZEROZERO;
         if (i < 2)
             nw.Flags |= WFLG_SIZEGADGET;
         nw.FirstGadget = 0;
@@ -247,7 +247,7 @@ void gui_edit_player_name(struct MC4App *app)
     nw.DetailPen = 0;
     nw.BlockPen = 1;
     nw.IDCMPFlags = IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_RAWKEY;
-    nw.Flags = WFLG_CLOSEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_SMART_REFRESH | WFLG_ACTIVATE;
+    nw.Flags = WFLG_CLOSEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_SMART_REFRESH | WFLG_ACTIVATE | WFLG_GIMMEZEROZERO;
     nw.FirstGadget = &name_gad;
     nw.CheckMark = 0;
     nw.Title = (UBYTE *)"Player Name";

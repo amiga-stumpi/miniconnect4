@@ -81,7 +81,9 @@ static void draw_board(struct MC4App *app)
 
 void gui_draw_status(struct MC4App *app)
 {
-    fill_rect(app->rp, 4, app->status_y - 10, app->win->Width - 8, app->win->Height - 4, PEN_BG);
+    WORD ww = app->win->GZZWidth ? app->win->GZZWidth : app->win->Width;
+    WORD wh = app->win->GZZHeight ? app->win->GZZHeight : app->win->Height;
+    fill_rect(app->rp, 4, app->status_y - 10, ww - 8, wh - 4, PEN_BG);
     draw_text(app->rp, 8, app->status_y, app->status, PEN_TEXT);
 }
 
@@ -91,7 +93,9 @@ void gui_draw_chat(struct MC4App *app)
     WORD y = app->chat_y;
     if (!app->cfg.chat_enabled)
         return;
-    fill_rect(app->rp, 4, y - 10, app->win->Width - 8, app->win->Height - 6, PEN_BG);
+    WORD ww = app->win->GZZWidth ? app->win->GZZWidth : app->win->Width;
+    WORD wh = app->win->GZZHeight ? app->win->GZZHeight : app->win->Height;
+    fill_rect(app->rp, 4, y - 10, ww - 8, wh - 6, PEN_BG);
     for (i = 0; i < app->chat_count; ++i) {
         draw_text(app->rp, 8, y, app->chat_lines[i], PEN_TEXT);
         y += 10;
@@ -104,7 +108,11 @@ void gui_draw_all(struct MC4App *app)
 {
     if (!app->win)
         return;
-    fill_rect(app->rp, 0, 0, app->win->Width - 1, app->win->Height - 1, PEN_BG);
+    {
+        WORD ww = app->win->GZZWidth ? app->win->GZZWidth : app->win->Width;
+        WORD wh = app->win->GZZHeight ? app->win->GZZHeight : app->win->Height;
+        fill_rect(app->rp, 0, 0, ww - 1, wh - 1, PEN_BG);
+    }
     draw_board(app);
     gui_draw_status(app);
     gui_draw_chat(app);
