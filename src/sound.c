@@ -44,6 +44,14 @@ static const ULONG g_src_len[SOUND_COUNT] = {
     11136
 };
 
+static const UWORD g_max_ticks[SOUND_COUNT] = {
+    10,
+    25,
+    35,
+    50,
+    45
+};
+
 static void set_status(const char *s)
 {
     int i = 0;
@@ -122,6 +130,11 @@ static void free_chip_samples(void)
 static int copy_chip_samples(void)
 {
     int i;
+    ULONG j;
+    int peak;
+    int v;
+    int scale;
+
     for (i = 0; i < SOUND_COUNT; ++i) {
         g_chip_len[i] = g_src_len[i];
         g_chip_data[i] = (BYTE *)AllocMem(g_chip_len[i], MEMF_CHIP | MEMF_PUBLIC);
@@ -130,7 +143,25 @@ static int copy_chip_samples(void)
             free_chip_samples();
             return 0;
         }
-        CopyMem((APTR)g_src_data[i], (APTR)g_chip_data[i], g_chip_len[i]);
+
+        peak = 0;
+        for (j = 0; j < g_chip_len[i]; ++j) {
+            v = g_src_data[i][j];
+            if (v < 0)
+                v = -v;
+            if (v > peak)
+                peak = v;
+        }
+        scale = peak > 0 ? (120 * 256) / peak : 256;
+
+        for (j = 0; j < g_chip_len[i]; ++j) {
+            v = ((int)g_src_data[i][j] * scale) / 256;
+            if (v > 127)
+                v = 127;
+            else if (v < -128)
+                v = -128;
+            g_chip_data[i][j] = (BYTE)v;
+        }
     }
     return 1;
 }
@@ -162,7 +193,7 @@ void sound_play(int id)
         set_status("sound bad id");
         return;
     }
-    paula_play_raw(g_chip_data[id], g_chip_len[id], SOUND_PERIOD_8KHZ, 10);
+    paula_play_raw(g_chip_data[id], g_chip_len[id], SOUND_PERIOD_8KHZ, g_max_ticks[id]);
 }
 
 const char *sound_test(void)
