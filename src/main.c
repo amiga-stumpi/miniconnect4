@@ -20,6 +20,7 @@ extern void chat_submit(struct MC4App *app);
 
 static void app_update_local_status(struct MC4App *app);
 static void app_maybe_computer_move(struct MC4App *app);
+static void app_offer_rematch(struct MC4App *app);
 
 static void clear_invite_pending(struct MC4App *app)
 {
@@ -68,12 +69,27 @@ void app_new_game(struct MC4App *app)
     UBYTE local = app->game.local_player;
     sound_play(MC4_SOUND_START);
     game_init(&app->game);
+    app->rematch_prompted = 0;
     app->game.local_player = local ? local : MC4_P1;
     app->my_turn = (app->net_state != MC4_NET_CONNECTED || app->game.local_player == MC4_P1) ? 1 : 0;
     app_update_local_status(app);
     gui_layout(app);
     gui_draw_all(app);
     app_maybe_computer_move(app);
+}
+
+static void app_offer_rematch(struct MC4App *app)
+{
+    if (app->net_state != MC4_NET_CONNECTED || app->rematch_prompted)
+        return;
+    app->rematch_prompted = 1;
+    if (gui_confirm_rematch(app)) {
+        net_send_rematch(app, 1);
+        gui_set_status(app, tr(&app->cfg, MC4_TX_REMATCH_WAIT));
+    } else {
+        net_send_rematch(app, 0);
+        gui_set_status(app, tr(&app->cfg, MC4_TX_BACK_TO_LOBBY));
+    }
 }
 
 static void app_maybe_computer_move(struct MC4App *app)
@@ -149,6 +165,8 @@ void app_local_move(struct MC4App *app, int col, int send_net)
         }
     }
     gui_draw_status(app);
+    if (app->game.game_over && app->net_state == MC4_NET_CONNECTED)
+        app_offer_rematch(app);
     if (!app->game.game_over && send_net && app->net_state != MC4_NET_CONNECTED)
         app_maybe_computer_move(app);
 }

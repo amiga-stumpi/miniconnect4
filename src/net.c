@@ -55,6 +55,8 @@ void net_close(struct MC4App *app)
     app->view = MC4_VIEW_GAME;
     app->lobby_count = 0;
     app->my_turn = 1;
+    app->remote_name[0] = 0;
+    app->rematch_prompted = 0;
 }
 
 static int send_line(const char *line)
@@ -215,6 +217,13 @@ int net_send_decline(struct MC4App *app, const char *name)
     util_copy(line, sizeof(line), "DECLINE ");
     util_append(line, sizeof(line), name);
     return send_line(line);
+}
+
+int net_send_rematch(struct MC4App *app, int yes)
+{
+    if (app->net_state != MC4_NET_CONNECTED)
+        return 0;
+    return send_line(yes ? "REMATCH YES" : "REMATCH NO");
 }
 
 int net_send_newgame(struct MC4App *app)

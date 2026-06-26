@@ -84,7 +84,8 @@ enum MC4TextId {
     MC4_TX_COLOR_TEXT, MC4_TX_COLOR_BOARD, MC4_TX_CHIP1, MC4_TX_CHIP2,
     MC4_TX_BG_RULE, MC4_TX_COLOR_WINDOW_FAILED, MC4_TX_NAME_WINDOW_FAILED,
     MC4_TX_NAME_LABEL, MC4_TX_CANCEL, MC4_TX_NAME_SAVED, MC4_TX_ACCEPT,
-    MC4_TX_DECLINE, MC4_TX_ABOUT_TEXT, MC4_TX_WINDOW_OPEN_FAILED
+    MC4_TX_DECLINE, MC4_TX_REMATCH_PROMPT, MC4_TX_REMATCH_WAIT,
+    MC4_TX_BACK_TO_LOBBY, MC4_TX_ABOUT_TEXT, MC4_TX_WINDOW_OPEN_FAILED
 };
 
 struct MC4Config {
@@ -158,6 +159,7 @@ struct MC4App {
     UBYTE invite_pending;
     UWORD invite_wait_ticks;
     char invite_name[MC4_NAME_LEN + 1];
+    UBYTE rematch_prompted;
 };
 
 void util_copy(char *dst, int max_len, const char *src);
@@ -195,6 +197,7 @@ void gui_info(struct MC4App *app);
 void gui_edit_player_name(struct MC4App *app);
 void gui_edit_colors(struct MC4App *app);
 int gui_confirm_invite(struct MC4App *app, const char *name);
+int gui_confirm_rematch(struct MC4App *app);
 void gui_apply_language(struct MC4App *app);
 void gui_refresh_menus(struct MC4App *app);
 const char *tr(const struct MC4Config *cfg, int id);
@@ -211,6 +214,7 @@ int net_send_lobby_chat(struct MC4App *app, const char *text);
 int net_send_invite(struct MC4App *app, const char *name);
 int net_send_accept(struct MC4App *app, const char *name);
 int net_send_decline(struct MC4App *app, const char *name);
+int net_send_rematch(struct MC4App *app, int yes);
 
 void protocol_handle_line(struct MC4App *app, const char *line);
 void app_new_game(struct MC4App *app);

@@ -27,6 +27,7 @@ struct Client {
     int pending_from;
     int pending_to;
     time_t pending_time;
+    int rematch;
 };
 
 static struct Client clients[MAX_CLIENTS];
@@ -144,12 +145,14 @@ static void close_client(int idx)
     clients[idx].pending_from = -1;
     clients[idx].pending_to = -1;
     clients[idx].pending_time = 0;
+    clients[idx].rematch = -1;
     if (peer >= 0 && clients[peer].fd >= 0) {
         clients[peer].busy = 0;
         clients[peer].peer = -1;
         clients[peer].pending_from = -1;
         clients[peer].pending_to = -1;
         clients[peer].pending_time = 0;
+        clients[peer].rematch = -1;
         send_line(clients[peer].fd, "QUIT");
     }
     broadcast_users();
@@ -212,11 +215,53 @@ static void start_game(int a, int b)
     clients[b].busy = 1;
     clients[a].peer = b;
     clients[b].peer = a;
+    clients[a].rematch = -1;
+    clients[b].rematch = -1;
     snprintf(line, sizeof(line), "START %s P1", clients[b].name);
     send_line(clients[a].fd, line);
     snprintf(line, sizeof(line), "START %s P2", clients[a].name);
     send_line(clients[b].fd, line);
     broadcast_users();
+}
+
+
+static void return_pair_to_lobby(int a, int b)
+{
+    if (a >= 0 && clients[a].fd >= 0) {
+        clients[a].busy = 0;
+        clients[a].peer = -1;
+        clients[a].rematch = -1;
+        send_line(clients[a].fd, "LOBBY");
+    }
+    if (b >= 0 && clients[b].fd >= 0) {
+        clients[b].busy = 0;
+        clients[b].peer = -1;
+        clients[b].rematch = -1;
+        send_line(clients[b].fd, "LOBBY");
+    }
+    broadcast_users();
+}
+
+static void handle_rematch(int idx, int yes)
+{
+    int peer = clients[idx].peer;
+    if (peer < 0 || clients[peer].fd < 0) {
+        clients[idx].busy = 0;
+        clients[idx].peer = -1;
+        clients[idx].rematch = -1;
+        send_line(clients[idx].fd, "LOBBY");
+        broadcast_users();
+        return;
+    }
+    clients[idx].rematch = yes ? 1 : 0;
+    if (!yes) {
+        return_pair_to_lobby(idx, peer);
+        return;
+    }
+    if (clients[peer].rematch == 1)
+        start_game(idx, peer);
+    else
+        send_line(clients[idx].fd, "REMATCHWAIT");
 }
 
 static void handle_line(int idx, char *line)
@@ -268,6 +313,10 @@ static void handle_line(int idx, char *line)
             send_line(clients[target].fd, reply);
             clear_pending_pair(target, idx);
         }
+    } else if (strncmp(line, "REMATCH YES", 11) == 0) {
+        handle_rematch(idx, 1);
+    } else if (strncmp(line, "REMATCH NO", 10) == 0) {
+        handle_rematch(idx, 0);
     } else if (strncmp(line, "MOVE ", 5) == 0 || strncmp(line, "CHAT ", 5) == 0 || strncmp(line, "NEWGAME", 7) == 0) {
         relay_to_peer(idx, line);
     } else if (strncmp(line, "QUIT", 4) == 0) {
@@ -328,6 +377,9 @@ int main(int argc, char **argv)
     for (i = 0; i < MAX_CLIENTS; ++i) {
         clients[i].fd = -1;
         clients[i].peer = -1;
+        clients[i].pending_from = -1;
+        clients[i].pending_to = -1;
+        clients[i].rematch = -1;
     }
 
     listen_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -380,6 +432,7 @@ int main(int argc, char **argv)
                 clients[idx].pending_from = -1;
                 clients[idx].pending_to = -1;
                 clients[idx].pending_time = 0;
+                clients[idx].rematch = -1;
                 send_line(fd, "HELLO MiniConnect4Lobby");
             } else if (fd >= 0) {
                 send_line(fd, "LOBBYCHAT Server: lobby full");

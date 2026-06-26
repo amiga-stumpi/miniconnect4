@@ -570,6 +570,27 @@ int gui_confirm_invite(struct MC4App *app, const char *name)
     return AutoRequest(app->win, &body, &yes, &no, 0, 0, 260, 70) ? 1 : 0;
 }
 
+int gui_confirm_rematch(struct MC4App *app)
+{
+    struct IntuiText body;
+    struct IntuiText yes;
+    struct IntuiText no;
+
+    body.FrontPen = 1; body.BackPen = 0; body.DrawMode = JAM1;
+    body.LeftEdge = 8; body.TopEdge = 8; body.ITextFont = 0;
+    body.IText = (UBYTE *)tr(&app->cfg, MC4_TX_REMATCH_PROMPT); body.NextText = 0;
+
+    yes.FrontPen = 1; yes.BackPen = 0; yes.DrawMode = JAM1;
+    yes.LeftEdge = 6; yes.TopEdge = 3; yes.ITextFont = 0;
+    yes.IText = (UBYTE *)tr(&app->cfg, MC4_TX_ACCEPT); yes.NextText = 0;
+
+    no.FrontPen = 1; no.BackPen = 0; no.DrawMode = JAM1;
+    no.LeftEdge = 6; no.TopEdge = 3; no.ITextFont = 0;
+    no.IText = (UBYTE *)tr(&app->cfg, MC4_TX_DECLINE); no.NextText = 0;
+
+    return AutoRequest(app->win, &body, &yes, &no, 0, 0, 250, 70) ? 1 : 0;
+}
+
 void gui_info(struct MC4App *app)
 {
     struct IntuiText body;

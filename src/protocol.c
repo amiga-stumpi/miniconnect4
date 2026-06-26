@@ -53,7 +53,6 @@ void protocol_handle_line(struct MC4App *app, const char *line)
     char msg[MC4_CHAT_LEN];
 
     if (util_starts(line, "HELLO ")) {
-        gui_add_chat(app, line + 6);
         gui_set_status(app, tr(&app->cfg, MC4_TX_CONNECTED));
         return;
     }
@@ -118,6 +117,7 @@ void protocol_handle_line(struct MC4App *app, const char *line)
         role = p;
         sound_play(MC4_SOUND_START);
         game_init(&app->game);
+        app->rematch_prompted = 0;
         app->invite_pending = 0;
         app->invite_wait_ticks = 0;
         app->invite_name[0] = 0;
@@ -154,9 +154,25 @@ void protocol_handle_line(struct MC4App *app, const char *line)
         return;
     }
     if (util_starts(line, "CHAT ")) {
-        util_copy(msg, sizeof(msg), "Remote: ");
+        util_copy(msg, sizeof(msg), app->remote_name[0] ? app->remote_name : "Remote");
+        util_append(msg, sizeof(msg), ": ");
         util_append(msg, sizeof(msg), line + 5);
         gui_add_chat(app, msg);
+        return;
+    }
+    if (util_starts(line, "REMATCHWAIT")) {
+        gui_set_status(app, tr(&app->cfg, MC4_TX_REMATCH_WAIT));
+        return;
+    }
+    if (util_starts(line, "LOBBY")) {
+        app->view = MC4_VIEW_LOBBY;
+        app->game.game_over = 0;
+        app->my_turn = 0;
+        app->remote_name[0] = 0;
+        app->rematch_prompted = 0;
+        gui_set_status(app, tr(&app->cfg, MC4_TX_BACK_TO_LOBBY));
+        gui_layout(app);
+        gui_draw_all(app);
         return;
     }
     if (util_starts(line, "NEWGAME")) {
