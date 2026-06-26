@@ -81,14 +81,8 @@ static void draw_board(struct MC4App *app)
 
 void gui_draw_status(struct MC4App *app)
 {
-    char turn[40];
     fill_rect(app->rp, 4, app->status_y - 10, app->win->Width - 8, app->status_y + 4, PEN_BG);
     draw_text(app->rp, 8, app->status_y, app->status, PEN_TEXT);
-    if (!app->game.game_over) {
-        util_copy(turn, sizeof(turn), "Turn: Player ");
-        util_append(turn, sizeof(turn), app->game.current_player == MC4_P1 ? "1" : "2");
-        draw_text(app->rp, app->win->Width - 100, app->status_y, turn, PEN_TEXT);
-    }
 }
 
 void gui_draw_chat(struct MC4App *app)
