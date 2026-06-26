@@ -134,9 +134,35 @@ static void do_menu(struct MC4App *app, UWORD menu, UWORD item)
     }
 }
 
+static char rawkey_to_char(UWORD code)
+{
+    switch (code) {
+        case 0x02: return '1'; case 0x03: return '2'; case 0x04: return '3';
+        case 0x05: return '4'; case 0x06: return '5'; case 0x07: return '6';
+        case 0x08: return '7'; case 0x09: return '8'; case 0x0a: return '9';
+        case 0x0b: return '0';
+        case 0x10: return 'q'; case 0x11: return 'w'; case 0x12: return 'e';
+        case 0x13: return 'r'; case 0x14: return 't'; case 0x15: return 'y';
+        case 0x16: return 'u'; case 0x17: return 'i'; case 0x18: return 'o';
+        case 0x19: return 'p';
+        case 0x20: return 'a'; case 0x21: return 's'; case 0x22: return 'd';
+        case 0x23: return 'f'; case 0x24: return 'g'; case 0x25: return 'h';
+        case 0x26: return 'j'; case 0x27: return 'k'; case 0x28: return 'l';
+        case 0x31: return 'z'; case 0x32: return 'x'; case 0x33: return 'c';
+        case 0x34: return 'v'; case 0x35: return 'b'; case 0x36: return 'n';
+        case 0x37: return 'm';
+        case 0x38: return ','; case 0x39: return '.'; case 0x3a: return '/';
+        case 0x40: return ' ';
+    }
+    return 0;
+}
+
 static void handle_key(struct MC4App *app, UWORD code)
 {
-    char c = 0;
+    char c;
+
+    if (code & 0x80)
+        return;
     if (code == 0x44) {
         chat_submit(app);
         return;
@@ -148,17 +174,8 @@ static void handle_key(struct MC4App *app, UWORD code)
         }
         return;
     }
-    if (code >= 0x02 && code <= 0x0a)
-        c = (char)('1' + (code - 0x02));
-    else if (code >= 0x10 && code <= 0x19)
-        c = (char)('q' + (code - 0x10));
-    else if (code >= 0x20 && code <= 0x28)
-        c = (char)('a' + (code - 0x20));
-    else if (code >= 0x31 && code <= 0x38)
-        c = (char)('z' + (code - 0x31));
-    else if (code == 0x40)
-        c = ' ';
 
+    c = rawkey_to_char(code);
     if (c && app->cfg.chat_enabled && app->chat_len < MC4_CHAT_LEN - 1) {
         app->chat_input[app->chat_len++] = c;
         app->chat_input[app->chat_len] = 0;

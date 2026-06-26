@@ -31,10 +31,23 @@ void gui_layout(struct MC4App *app)
     WORD ww = app->win->GZZWidth ? app->win->GZZWidth : app->win->Width;
     WORD wh = app->win->GZZHeight ? app->win->GZZHeight : app->win->Height;
     WORD top = 8;
-    WORD bottom = app->cfg.chat_enabled ? 100 : 28;
-    WORD min_cell = (wh < 280) ? 10 : 18;
+    WORD min_cell = (wh < 240) ? 8 : 10;
+    WORD chat_h = (WORD)((MC4_CHAT_LINES * 10) + 27);
     WORD avail_w = (WORD)(ww - 12);
-    WORD avail_h = (WORD)(wh - top - bottom);
+    WORD avail_h;
+
+    app->board_x = 6;
+    app->board_y = top;
+    if (app->cfg.chat_enabled) {
+        app->chat_y = (WORD)(wh - chat_h);
+        if (app->chat_y < top + 80)
+            app->chat_y = (WORD)(top + 80);
+        app->status_y = (WORD)(app->chat_y - 20);
+    } else {
+        app->status_y = (WORD)(wh - 12);
+        app->chat_y = (WORD)(wh + 10);
+    }
+    avail_h = (WORD)(app->status_y - app->board_y - 14);
 
     if (avail_w < MC4_COLS * min_cell)
         avail_w = MC4_COLS * min_cell;
@@ -50,10 +63,6 @@ void gui_layout(struct MC4App *app)
     app->cell = app->cell_w < app->cell_h ? app->cell_w : app->cell_h;
     app->board_w = (WORD)(app->cell_w * MC4_COLS);
     app->board_h = (WORD)(app->cell_h * MC4_ROWS);
-    app->board_x = 6;
-    app->board_y = top;
-    app->status_y = (WORD)(app->board_y + app->board_h + 14);
-    app->chat_y = (WORD)(app->status_y + 22);
 }
 
 void gui_enforce_aspect(struct MC4App *app)
