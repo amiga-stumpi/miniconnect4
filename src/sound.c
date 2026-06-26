@@ -195,18 +195,3 @@ void sound_play(int id)
     }
     paula_play_raw(g_chip_data[id], g_chip_len[id], SOUND_PERIOD_8KHZ, g_max_ticks[id]);
 }
-
-const char *sound_test(void)
-{
-    int i;
-
-    if (!g_sound_ready) {
-        set_status("sound not ready");
-        return sound_status();
-    }
-
-    for (i = 0; i < SOUND_COUNT; ++i)
-        paula_play_raw(g_chip_data[i], g_chip_len[i], SOUND_PERIOD_8KHZ, g_max_ticks[i]);
-    set_status("all sounds sent");
-    return sound_status();
-}

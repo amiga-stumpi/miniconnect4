@@ -11,6 +11,5 @@ void sound_init(void);
 void sound_shutdown(void);
 void sound_play(int id);
 const char *sound_status(void);
-const char *sound_test(void);
 
 #endif
