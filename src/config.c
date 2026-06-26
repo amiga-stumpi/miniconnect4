@@ -34,9 +34,9 @@ static void trim_cr(char *s)
 void config_defaults(struct MC4Config *cfg)
 {
     cfg->win_x = 20;
-    cfg->win_y = 20;
-    cfg->win_w = 430;
-    cfg->win_h = 300;
+    cfg->win_y = 12;
+    cfg->win_w = 390;
+    cfg->win_h = 220;
     util_copy(cfg->player_name, sizeof(cfg->player_name), "Player");
     util_copy(cfg->host, sizeof(cfg->host), "127.0.0.1");
     cfg->port = MC4_PORT;

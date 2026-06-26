@@ -66,27 +66,29 @@ int gui_open(struct MC4App *app)
         return 0;
 
     x = app->cfg.win_x; y = app->cfg.win_y; w = app->cfg.win_w; h = app->cfg.win_h;
-    if (w < 360) w = 360;
-    if (h < 240) h = 240;
+    if (w < 300) w = 300;
+    if (h < 180) h = 180;
 
-    for (i = 0; i < 2; ++i) {
+    for (i = 0; i < 3; ++i) {
         nw.LeftEdge = i == 0 ? x : 0;
         nw.TopEdge = i == 0 ? y : 0;
-        nw.Width = w;
-        nw.Height = h;
+        nw.Width = i == 0 ? w : (i == 1 ? 320 : 300);
+        nw.Height = i == 0 ? h : (i == 1 ? 200 : 180);
         nw.DetailPen = 0;
         nw.BlockPen = 1;
         nw.IDCMPFlags = IDCMP_CLOSEWINDOW | IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY | IDCMP_NEWSIZE | IDCMP_REFRESHWINDOW;
-        nw.Flags = WFLG_CLOSEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_SIZEGADGET | WFLG_SMART_REFRESH | WFLG_ACTIVATE;
+        nw.Flags = WFLG_CLOSEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_SMART_REFRESH | WFLG_ACTIVATE;
+        if (i < 2)
+            nw.Flags |= WFLG_SIZEGADGET;
         nw.FirstGadget = 0;
         nw.CheckMark = 0;
         nw.Title = (UBYTE *)MC4_NAME;
         nw.Screen = 0;
         nw.BitMap = 0;
-        nw.MinWidth = 360;
-        nw.MinHeight = 240;
-        nw.MaxWidth = 640;
-        nw.MaxHeight = 400;
+        nw.MinWidth = 300;
+        nw.MinHeight = 180;
+        nw.MaxWidth = -1;
+        nw.MaxHeight = -1;
         nw.Type = WBENCHSCREEN;
         app->win = OpenWindow(&nw);
         if (app->win)
