@@ -2,13 +2,6 @@
 #include <proto/dos.h>
 #include "miniconnect4.h"
 
-#define PEN_BG 0
-#define PEN_TEXT 1
-#define PEN_BOARD 1
-#define PEN_P1 2
-#define PEN_P2 3
-#define PEN_GRID 1
-
 static void draw_text(struct RastPort *rp, WORD x, WORD y, const char *s, UBYTE pen)
 {
     SetAPen(rp, pen);
@@ -36,11 +29,11 @@ static void draw_disc(struct MC4App *app, WORD cx, WORD cy, WORD r, UBYTE value)
     struct RastPort *rp = app->rp;
 
     if (value == MC4_P1)
-        pen = PEN_P1;
+        pen = app->cfg.pen_p1;
     else if (value == MC4_P2)
-        pen = PEN_P2;
+        pen = app->cfg.pen_p2;
     else
-        pen = PEN_BG;
+        pen = app->cfg.pen_bg;
 
     rr = r * r;
     SetAPen(rp, pen);
@@ -50,7 +43,7 @@ static void draw_disc(struct MC4App *app, WORD cx, WORD cy, WORD r, UBYTE value)
                 WritePixel(rp, cx + x, cy + y);
         }
     }
-    SetAPen(rp, PEN_GRID);
+    SetAPen(rp, app->cfg.pen_text);
     for (x = -r; x <= r; ++x) {
         WritePixel(rp, cx + x, cy - r);
         WritePixel(rp, cx + x, cy + r);
@@ -63,7 +56,7 @@ void gui_draw_cell(struct MC4App *app, int row, int col, UBYTE value)
     WORD y = app->board_y + (WORD)(row * app->cell_h);
     WORD r = (WORD)(((app->cell_w < app->cell_h ? app->cell_w : app->cell_h) / 2) - 3);
 
-    fill_rect(app->rp, x + 1, y + 1, x + app->cell_w - 2, y + app->cell_h - 2, PEN_BOARD);
+    fill_rect(app->rp, x + 1, y + 1, x + app->cell_w - 2, y + app->cell_h - 2, app->cfg.pen_board);
     draw_disc(app, (WORD)(x + app->cell_w / 2), (WORD)(y + app->cell_h / 2), r, value);
 }
 
@@ -71,12 +64,12 @@ static void draw_board(struct MC4App *app)
 {
     int r, c;
     fill_rect(app->rp, app->board_x, app->board_y,
-              app->board_x + app->board_w, app->board_y + app->board_h, PEN_BOARD);
+              app->board_x + app->board_w, app->board_y + app->board_h, app->cfg.pen_board);
     for (r = 0; r < MC4_ROWS; ++r)
         for (c = 0; c < MC4_COLS; ++c)
             gui_draw_cell(app, r, c, app->game.board[r][c]);
     frame_rect(app->rp, app->board_x, app->board_y,
-               app->board_x + app->board_w, app->board_y + app->board_h, PEN_TEXT);
+               app->board_x + app->board_w, app->board_y + app->board_h, app->cfg.pen_text);
 }
 
 void gui_draw_lobby(struct MC4App *app)
@@ -87,13 +80,13 @@ void gui_draw_lobby(struct MC4App *app)
     WORD ww = app->win->GZZWidth ? app->win->GZZWidth : app->win->Width;
 
     fill_rect(app->rp, app->board_x, app->board_y,
-              app->board_x + app->board_w, app->board_y + app->board_h, PEN_BG);
+              app->board_x + app->board_w, app->board_y + app->board_h, app->cfg.pen_bg);
     frame_rect(app->rp, app->board_x, app->board_y,
-               app->board_x + app->board_w, app->board_y + app->board_h, PEN_TEXT);
-    draw_text(app->rp, app->board_x + 8, app->board_y + 14, "Lobby - available players", PEN_TEXT);
+               app->board_x + app->board_w, app->board_y + app->board_h, app->cfg.pen_text);
+    draw_text(app->rp, app->board_x + 8, app->board_y + 14, "Lobby - available players", app->cfg.pen_text);
     y = (WORD)(app->board_y + 30);
     if (app->lobby_count == 0) {
-        draw_text(app->rp, app->board_x + 8, y, "No other players online", PEN_TEXT);
+        draw_text(app->rp, app->board_x + 8, y, "No other players online", app->cfg.pen_text);
         return;
     }
     for (i = 0; i < app->lobby_count; ++i) {
@@ -102,8 +95,8 @@ void gui_draw_lobby(struct MC4App *app)
         util_copy(line, sizeof(line), app->lobby_players[i].name);
         util_append(line, sizeof(line), app->lobby_players[i].busy ? "  (in game)" : "  (request game)");
         if (!app->lobby_players[i].busy)
-            fill_rect(app->rp, app->board_x + 4, y - 9, ww - 12, y + 3, PEN_BOARD);
-        draw_text(app->rp, app->board_x + 8, y, line, PEN_TEXT);
+            fill_rect(app->rp, app->board_x + 4, y - 9, ww - 12, y + 3, app->cfg.pen_board);
+        draw_text(app->rp, app->board_x + 8, y, line, app->cfg.pen_text);
         y += 13;
     }
 }
@@ -112,9 +105,9 @@ void gui_draw_lobby(struct MC4App *app)
 void gui_draw_status(struct MC4App *app)
 {
     WORD ww = app->win->GZZWidth ? app->win->GZZWidth : app->win->Width;
-    fill_rect(app->rp, 4, app->status_y - 10, ww - 8, app->status_y + 3, PEN_BG);
-    frame_rect(app->rp, 4, app->status_y - 11, ww - 8, app->status_y + 4, PEN_TEXT);
-    draw_text(app->rp, 8, app->status_y, app->status, PEN_TEXT);
+    fill_rect(app->rp, 4, app->status_y - 10, ww - 8, app->status_y + 3, app->cfg.pen_bg);
+    frame_rect(app->rp, 4, app->status_y - 11, ww - 8, app->status_y + 4, app->cfg.pen_text);
+    draw_text(app->rp, 8, app->status_y, app->status, app->cfg.pen_text);
 }
 
 void gui_draw_chat(struct MC4App *app)
@@ -129,15 +122,15 @@ void gui_draw_chat(struct MC4App *app)
     chat_bottom = (WORD)(app->chat_y + (MC4_CHAT_LINES * 10) + 16);
     input_y = (WORD)(app->chat_y + (MC4_CHAT_LINES * 10) + 4);
 
-    fill_rect(app->rp, 4, y - 10, ww - 8, chat_bottom, PEN_BG);
-    frame_rect(app->rp, 4, y - 11, ww - 8, chat_bottom, PEN_TEXT);
+    fill_rect(app->rp, 4, y - 10, ww - 8, chat_bottom, app->cfg.pen_bg);
+    frame_rect(app->rp, 4, y - 11, ww - 8, chat_bottom, app->cfg.pen_text);
     Move(app->rp, 4, input_y - 10); Draw(app->rp, ww - 8, input_y - 10);
     for (i = 0; i < app->chat_count; ++i) {
-        draw_text(app->rp, 8, y, app->chat_lines[i], PEN_TEXT);
+        draw_text(app->rp, 8, y, app->chat_lines[i], app->cfg.pen_text);
         y += 10;
     }
-    draw_text(app->rp, 8, input_y, ">", PEN_TEXT);
-    draw_text(app->rp, 20, input_y, app->chat_input, PEN_TEXT);
+    draw_text(app->rp, 8, input_y, ">", app->cfg.pen_text);
+    draw_text(app->rp, 20, input_y, app->chat_input, app->cfg.pen_text);
 }
 
 void gui_draw_all(struct MC4App *app)
@@ -147,7 +140,7 @@ void gui_draw_all(struct MC4App *app)
     {
         WORD ww = app->win->GZZWidth ? app->win->GZZWidth : app->win->Width;
         WORD wh = app->win->GZZHeight ? app->win->GZZHeight : app->win->Height;
-        fill_rect(app->rp, 0, 0, ww - 1, wh - 1, PEN_BG);
+        fill_rect(app->rp, 0, 0, ww - 1, wh - 1, app->cfg.pen_bg);
     }
     if (app->view == MC4_VIEW_LOBBY)
         gui_draw_lobby(app);

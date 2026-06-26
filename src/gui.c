@@ -11,13 +11,15 @@ static struct IntuiText txt_lobby = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Lobby", 0 }
 static struct IntuiText txt_disconnect = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Disconnect", 0 };
 static struct IntuiText txt_player_name = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Player Name...", 0 };
 static struct IntuiText txt_chat = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Toggle Chat", 0 };
+static struct IntuiText txt_colors = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Farben...", 0 };
 static struct IntuiText txt_info = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Info", 0 };
 
 static struct MenuItem item_project_quit = { 0, 0, 10, 92, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_quit, 0, 0, 0, 0 };
 static struct MenuItem item_project_new = { &item_project_quit, 0, 0, 92, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_new, 0, 0, 0, 0 };
 static struct MenuItem item_network_disconnect = { 0, 0, 10, 112, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_disconnect, 0, 0, 0, 0 };
 static struct MenuItem item_network_lobby = { &item_network_disconnect, 0, 0, 112, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_lobby, 0, 0, 0, 0 };
-static struct MenuItem item_options_chat = { 0, 0, 10, 112, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_chat, 0, 0, 0, 0 };
+static struct MenuItem item_options_colors = { 0, 0, 20, 112, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_colors, 0, 0, 0, 0 };
+static struct MenuItem item_options_chat = { &item_options_colors, 0, 10, 112, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_chat, 0, 0, 0, 0 };
 static struct MenuItem item_options_name = { &item_options_chat, 0, 0, 112, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_player_name, 0, 0, 0, 0 };
 static struct MenuItem item_help_info = { 0, 0, 0, 60, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_info, 0, 0, 0, 0 };
 
@@ -202,6 +204,164 @@ static void gui_box(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2)
     Draw(rp, x2, y2);
     Draw(rp, x1, y2);
     Draw(rp, x1, y1);
+}
+
+
+static UBYTE gui_screen_pen_count(struct MC4App *app)
+{
+    UBYTE depth = 2;
+    if (app->screen && app->screen->BitMap.Depth)
+        depth = app->screen->BitMap.Depth;
+    if (depth >= 8)
+        return 255;
+    return (UBYTE)((1 << depth) - 1);
+}
+
+static int bg_conflict(struct MC4Config *cfg, UBYTE pen)
+{
+    return pen == cfg->pen_text || pen == cfg->pen_board || pen == cfg->pen_p1 || pen == cfg->pen_p2;
+}
+
+static void draw_color_window(struct Window *w, struct MC4Config *cfg)
+{
+    static const char *names[5] = { "Hintergrund", "Schrift", "Spielfeld", "Chip 1", "Chip 2" };
+    UBYTE vals[5];
+    char n[8];
+    int i;
+    WORD y;
+
+    vals[0] = cfg->pen_bg;
+    vals[1] = cfg->pen_text;
+    vals[2] = cfg->pen_board;
+    vals[3] = cfg->pen_p1;
+    vals[4] = cfg->pen_p2;
+
+    SetAPen(w->RPort, 0);
+    RectFill(w->RPort, 0, 0, w->Width - 1, w->Height - 1);
+    gui_text(w->RPort, 12, 16, "Farben");
+    for (i = 0; i < 5; ++i) {
+        y = (WORD)(34 + i * 22);
+        gui_text(w->RPort, 12, y, names[i]);
+        SetAPen(w->RPort, vals[i]);
+        RectFill(w->RPort, 112, y - 9, 134, y + 3);
+        gui_box(w->RPort, 112, y - 9, 134, y + 3);
+        util_num(n, sizeof(n), vals[i]);
+        gui_text(w->RPort, 142, y, n);
+        gui_box(w->RPort, 174, y - 11, 194, y + 5);
+        gui_text(w->RPort, 181, y, "-");
+        gui_box(w->RPort, 204, y - 11, 224, y + 5);
+        gui_text(w->RPort, 211, y, "+");
+    }
+    gui_text(w->RPort, 12, 154, "Hintergrund darf nicht gleich sein.");
+}
+
+static UBYTE next_color_value(struct MC4Config *cfg, int index, int dir, UBYTE max_pen)
+{
+    UBYTE *ptrs[5];
+    int tries;
+    UBYTE v;
+
+    ptrs[0] = &cfg->pen_bg;
+    ptrs[1] = &cfg->pen_text;
+    ptrs[2] = &cfg->pen_board;
+    ptrs[3] = &cfg->pen_p1;
+    ptrs[4] = &cfg->pen_p2;
+
+    v = *ptrs[index];
+    for (tries = 0; tries < 260; ++tries) {
+        if (dir > 0)
+            v = (v >= max_pen) ? 0 : (UBYTE)(v + 1);
+        else
+            v = (v == 0) ? max_pen : (UBYTE)(v - 1);
+        if (index == 0) {
+            if (!bg_conflict(cfg, v))
+                return v;
+        } else {
+            if (v != cfg->pen_bg)
+                return v;
+        }
+    }
+    return *ptrs[index];
+}
+
+void gui_edit_colors(struct MC4App *app)
+{
+    struct NewWindow nw;
+    struct Window *w;
+    struct IntuiMessage *msg;
+    ULONG classv;
+    UWORD code;
+    WORD mx, my;
+    int done = 0;
+    int row;
+    UBYTE max_pen;
+    UBYTE *ptrs[5];
+
+    max_pen = gui_screen_pen_count(app);
+    if (max_pen == 0)
+        max_pen = 3;
+    ptrs[0] = &app->cfg.pen_bg;
+    ptrs[1] = &app->cfg.pen_text;
+    ptrs[2] = &app->cfg.pen_board;
+    ptrs[3] = &app->cfg.pen_p1;
+    ptrs[4] = &app->cfg.pen_p2;
+
+    memset(&nw, 0, sizeof(nw));
+    nw.LeftEdge = app->win ? (WORD)(app->win->LeftEdge + 30) : 30;
+    nw.TopEdge = app->win ? (WORD)(app->win->TopEdge + 30) : 30;
+    nw.Width = 250;
+    nw.Height = 172;
+    nw.DetailPen = 0;
+    nw.BlockPen = 1;
+    nw.IDCMPFlags = IDCMP_CLOSEWINDOW | IDCMP_MOUSEBUTTONS | IDCMP_REFRESHWINDOW;
+    nw.Flags = WFLG_CLOSEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_SMART_REFRESH | WFLG_ACTIVATE | WFLG_GIMMEZEROZERO;
+    nw.Title = (UBYTE *)"Farben";
+    nw.Type = WBENCHSCREEN;
+    nw.MinWidth = 250;
+    nw.MinHeight = 172;
+    nw.MaxWidth = 250;
+    nw.MaxHeight = 172;
+
+    w = OpenWindow(&nw);
+    if (!w) {
+        gui_set_status(app, "Farben Fenster fehlgeschlagen");
+        return;
+    }
+    draw_color_window(w, &app->cfg);
+
+    while (!done) {
+        Wait(1L << w->UserPort->mp_SigBit);
+        while ((msg = (struct IntuiMessage *)GetMsg(w->UserPort))) {
+            classv = msg->Class;
+            code = msg->Code;
+            mx = w->GZZMouseX;
+            my = w->GZZMouseY;
+            ReplyMsg((struct Message *)msg);
+            if (classv == IDCMP_CLOSEWINDOW) {
+                done = 1;
+            } else if (classv == IDCMP_REFRESHWINDOW) {
+                BeginRefresh(w);
+                draw_color_window(w, &app->cfg);
+                EndRefresh(w, TRUE);
+            } else if (classv == IDCMP_MOUSEBUTTONS && code == SELECTDOWN) {
+                row = (my - 23) / 22;
+                if (row >= 0 && row < 5) {
+                    if (mx >= 174 && mx <= 194) {
+                        *ptrs[row] = next_color_value(&app->cfg, row, -1, max_pen);
+                        draw_color_window(w, &app->cfg);
+                        gui_draw_all(app);
+                    } else if (mx >= 204 && mx <= 224) {
+                        *ptrs[row] = next_color_value(&app->cfg, row, 1, max_pen);
+                        draw_color_window(w, &app->cfg);
+                        gui_draw_all(app);
+                    }
+                }
+            }
+        }
+    }
+    config_save(&app->cfg);
+    CloseWindow(w);
+    gui_draw_all(app);
 }
 
 void gui_edit_player_name(struct MC4App *app)

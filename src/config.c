@@ -61,6 +61,11 @@ void config_defaults(struct MC4Config *cfg)
     cfg->port = MC4_PORT;
     cfg->chat_enabled = 1;
     cfg->animation_enabled = 1;
+    cfg->pen_bg = 0;
+    cfg->pen_text = 1;
+    cfg->pen_board = 1;
+    cfg->pen_p1 = 2;
+    cfg->pen_p2 = 3;
 }
 
 static int read_line(BPTR f, char *line, int max_len)
@@ -115,11 +120,27 @@ void config_load(struct MC4Config *cfg)
         else if (!strcmp(line, "port")) cfg->port = (UWORD)parse_int(eq, MC4_PORT);
         else if (!strcmp(line, "chat")) cfg->chat_enabled = (UBYTE)parse_int(eq, 1);
         else if (!strcmp(line, "animation")) cfg->animation_enabled = (UBYTE)parse_int(eq, 1);
+        else if (!strcmp(line, "pen_bg")) cfg->pen_bg = (UBYTE)parse_int(eq, cfg->pen_bg);
+        else if (!strcmp(line, "pen_text")) cfg->pen_text = (UBYTE)parse_int(eq, cfg->pen_text);
+        else if (!strcmp(line, "pen_board")) cfg->pen_board = (UBYTE)parse_int(eq, cfg->pen_board);
+        else if (!strcmp(line, "pen_p1")) cfg->pen_p1 = (UBYTE)parse_int(eq, cfg->pen_p1);
+        else if (!strcmp(line, "pen_p2")) cfg->pen_p2 = (UBYTE)parse_int(eq, cfg->pen_p2);
     }
     Close(f);
     if (!cfg->player_name[0] || is_plain_player_name(cfg->player_name))
         config_make_default_name(cfg->player_name, sizeof(cfg->player_name));
     cfg->chat_enabled = 1;
+    if (cfg->pen_bg == cfg->pen_text || cfg->pen_bg == cfg->pen_board ||
+        cfg->pen_bg == cfg->pen_p1 || cfg->pen_bg == cfg->pen_p2) {
+        UBYTE p;
+        for (p = 0; p < 16; ++p) {
+            if (p != cfg->pen_text && p != cfg->pen_board &&
+                p != cfg->pen_p1 && p != cfg->pen_p2) {
+                cfg->pen_bg = p;
+                break;
+            }
+        }
+    }
 }
 
 static void write_line(BPTR f, const char *key, const char *value)
@@ -146,5 +167,10 @@ void config_save(const struct MC4Config *cfg)
     util_num(n, sizeof(n), cfg->port); write_line(f, "port", n);
     util_num(n, sizeof(n), cfg->chat_enabled); write_line(f, "chat", n);
     util_num(n, sizeof(n), cfg->animation_enabled); write_line(f, "animation", n);
+    util_num(n, sizeof(n), cfg->pen_bg); write_line(f, "pen_bg", n);
+    util_num(n, sizeof(n), cfg->pen_text); write_line(f, "pen_text", n);
+    util_num(n, sizeof(n), cfg->pen_board); write_line(f, "pen_board", n);
+    util_num(n, sizeof(n), cfg->pen_p1); write_line(f, "pen_p1", n);
+    util_num(n, sizeof(n), cfg->pen_p2); write_line(f, "pen_p2", n);
     Close(f);
 }

@@ -43,6 +43,7 @@
 #define MC4_NETWORK_DISCONNECT 1
 #define MC4_OPTIONS_NAME 0
 #define MC4_OPTIONS_CHAT 1
+#define MC4_OPTIONS_COLORS 2
 #define MC4_HELP_INFO 0
 
 #define MC4_VIEW_GAME 0
@@ -58,6 +59,11 @@ struct MC4Config {
     UWORD port;
     UBYTE chat_enabled;
     UBYTE animation_enabled;
+    UBYTE pen_bg;
+    UBYTE pen_text;
+    UBYTE pen_board;
+    UBYTE pen_p1;
+    UBYTE pen_p2;
 };
 
 struct MC4Game {
@@ -146,6 +152,7 @@ void gui_set_status(struct MC4App *app, const char *s);
 void gui_add_chat(struct MC4App *app, const char *s);
 void gui_info(struct MC4App *app);
 void gui_edit_player_name(struct MC4App *app);
+void gui_edit_colors(struct MC4App *app);
 int gui_confirm_invite(struct MC4App *app, const char *name);
 
 int net_init(void);

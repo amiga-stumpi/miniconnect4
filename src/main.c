@@ -148,6 +148,8 @@ static void do_menu(struct MC4App *app, UWORD menu, UWORD item)
             app->cfg.chat_enabled = app->cfg.chat_enabled ? 0 : 1;
             gui_layout(app);
             gui_draw_all(app);
+        } else if (item == MC4_OPTIONS_COLORS) {
+            gui_edit_colors(app);
         }
     } else if (menu == MC4_MENU_HELP) {
         if (item == MC4_HELP_INFO)
