@@ -36,20 +36,20 @@ static const BYTE *const g_src_data[SOUND_COUNT] = {
     sound_lose_data
 };
 
-static const ULONG g_src_len[SOUND_COUNT] = {
-    8000,
-    8256,
-    9600,
-    12000,
-    11136
+static const ULONG *const g_src_len[SOUND_COUNT] = {
+    &sound_move_length,
+    &sound_invite_length,
+    &sound_start_length,
+    &sound_win_length,
+    &sound_lose_length
 };
 
 static const UWORD g_max_ticks[SOUND_COUNT] = {
     10,
     25,
-    35,
-    50,
-    45
+    45,
+    160,
+    70
 };
 
 static void set_status(const char *s)
@@ -136,7 +136,7 @@ static int copy_chip_samples(void)
     int scale;
 
     for (i = 0; i < SOUND_COUNT; ++i) {
-        g_chip_len[i] = g_src_len[i];
+        g_chip_len[i] = *g_src_len[i];
         g_chip_data[i] = (BYTE *)AllocMem(g_chip_len[i], MEMF_CHIP | MEMF_PUBLIC);
         if (!g_chip_data[i]) {
             set_status("sound no chip ram");
