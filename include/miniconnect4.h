@@ -10,7 +10,7 @@
 
 #define MC4_COLS 7
 #define MC4_ROWS 6
-#define MC4_CHAT_LINES 9
+#define MC4_CHAT_LINES 4
 #define MC4_LOBBY_MAX_PLAYERS 16
 #define MC4_CHAT_LEN 96
 #define MC4_NAME_LEN 31

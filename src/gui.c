@@ -31,7 +31,7 @@ void gui_layout(struct MC4App *app)
     WORD ww = app->win->GZZWidth ? app->win->GZZWidth : app->win->Width;
     WORD wh = app->win->GZZHeight ? app->win->GZZHeight : app->win->Height;
     WORD top = 8;
-    WORD bottom = app->cfg.chat_enabled ? 150 : 28;
+    WORD bottom = app->cfg.chat_enabled ? 100 : 28;
     WORD min_cell = (wh < 280) ? 10 : 18;
     WORD avail_w = (WORD)(ww - 12);
     WORD avail_h = (WORD)(wh - top - bottom);
