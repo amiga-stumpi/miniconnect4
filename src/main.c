@@ -77,9 +77,16 @@ void app_local_move(struct MC4App *app, int col, int send_net)
         sent_net = 1;
     }
     if (game_check_winner(&app->game, row, col)) {
-        util_copy(msg, sizeof(msg), "Player ");
-        util_append(msg, sizeof(msg), player == MC4_P1 ? "1 wins" : "2 wins");
-        gui_set_status(app, msg);
+        if (app->net_state == MC4_NET_CONNECTED) {
+            if (player == app->game.local_player)
+                gui_set_status(app, "Du hast gewonnen!");
+            else
+                gui_set_status(app, "Leider verloren!");
+        } else {
+            util_copy(msg, sizeof(msg), "Player ");
+            util_append(msg, sizeof(msg), player == MC4_P1 ? "1 wins" : "2 wins");
+            gui_set_status(app, msg);
+        }
     } else if (app->game.game_over) {
         gui_set_status(app, "Draw");
     } else {
