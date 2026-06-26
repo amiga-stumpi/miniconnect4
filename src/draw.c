@@ -59,12 +59,12 @@ static void draw_disc(struct MC4App *app, WORD cx, WORD cy, WORD r, UBYTE value)
 
 void gui_draw_cell(struct MC4App *app, int row, int col, UBYTE value)
 {
-    WORD x = app->board_x + (WORD)(col * app->cell);
-    WORD y = app->board_y + (WORD)(row * app->cell);
-    WORD r = (WORD)((app->cell / 2) - 3);
+    WORD x = app->board_x + (WORD)(col * app->cell_w);
+    WORD y = app->board_y + (WORD)(row * app->cell_h);
+    WORD r = (WORD)(((app->cell_w < app->cell_h ? app->cell_w : app->cell_h) / 2) - 3);
 
-    fill_rect(app->rp, x + 1, y + 1, x + app->cell - 2, y + app->cell - 2, PEN_BOARD);
-    draw_disc(app, (WORD)(x + app->cell / 2), (WORD)(y + app->cell / 2), r, value);
+    fill_rect(app->rp, x + 1, y + 1, x + app->cell_w - 2, y + app->cell_h - 2, PEN_BOARD);
+    draw_disc(app, (WORD)(x + app->cell_w / 2), (WORD)(y + app->cell_h / 2), r, value);
 }
 
 static void draw_board(struct MC4App *app)
@@ -81,7 +81,7 @@ static void draw_board(struct MC4App *app)
 
 void gui_draw_status(struct MC4App *app)
 {
-    fill_rect(app->rp, 4, app->status_y - 10, app->win->Width - 8, app->status_y + 4, PEN_BG);
+    fill_rect(app->rp, 4, app->status_y - 10, app->win->Width - 8, app->win->Height - 4, PEN_BG);
     draw_text(app->rp, 8, app->status_y, app->status, PEN_TEXT);
 }
 

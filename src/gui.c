@@ -5,23 +5,23 @@
 #include <string.h>
 #include "miniconnect4.h"
 
-static struct IntuiText txt_new = { 1, 0, JAM1, 0, 1, 0, (UBYTE *)"New Game", 0 };
-static struct IntuiText txt_quit = { 1, 0, JAM1, 0, 1, 0, (UBYTE *)"Quit", 0 };
-static struct IntuiText txt_host = { 1, 0, JAM1, 0, 1, 0, (UBYTE *)"Host Game", 0 };
-static struct IntuiText txt_join = { 1, 0, JAM1, 0, 1, 0, (UBYTE *)"Join Game", 0 };
-static struct IntuiText txt_disconnect = { 1, 0, JAM1, 0, 1, 0, (UBYTE *)"Disconnect", 0 };
-static struct IntuiText txt_player_name = { 1, 0, JAM1, 0, 1, 0, (UBYTE *)"Player Name...", 0 };
-static struct IntuiText txt_chat = { 1, 0, JAM1, 0, 1, 0, (UBYTE *)"Toggle Chat", 0 };
-static struct IntuiText txt_info = { 1, 0, JAM1, 0, 1, 0, (UBYTE *)"Info", 0 };
+static struct IntuiText txt_new = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"New Game", 0 };
+static struct IntuiText txt_quit = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Quit", 0 };
+static struct IntuiText txt_host = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Host Game", 0 };
+static struct IntuiText txt_join = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Join Game", 0 };
+static struct IntuiText txt_disconnect = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Disconnect", 0 };
+static struct IntuiText txt_player_name = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Player Name...", 0 };
+static struct IntuiText txt_chat = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Toggle Chat", 0 };
+static struct IntuiText txt_info = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Info", 0 };
 
-static struct MenuItem item_project_quit = { 0, 0, 10, 92, 10, ITEMTEXT | ITEMENABLED | HIGHBOX, 0, (APTR)&txt_quit, 0, 0, 0, 0 };
-static struct MenuItem item_project_new = { &item_project_quit, 0, 0, 92, 10, ITEMTEXT | ITEMENABLED | HIGHBOX, 0, (APTR)&txt_new, 0, 0, 0, 0 };
-static struct MenuItem item_network_disconnect = { 0, 0, 20, 112, 10, ITEMTEXT | ITEMENABLED | HIGHBOX, 0, (APTR)&txt_disconnect, 0, 0, 0, 0 };
-static struct MenuItem item_network_join = { &item_network_disconnect, 0, 10, 112, 10, ITEMTEXT | ITEMENABLED | HIGHBOX, 0, (APTR)&txt_join, 0, 0, 0, 0 };
-static struct MenuItem item_network_host = { &item_network_join, 0, 0, 112, 10, ITEMTEXT | ITEMENABLED | HIGHBOX, 0, (APTR)&txt_host, 0, 0, 0, 0 };
-static struct MenuItem item_options_chat = { 0, 0, 10, 112, 10, ITEMTEXT | ITEMENABLED | HIGHBOX, 0, (APTR)&txt_chat, 0, 0, 0, 0 };
-static struct MenuItem item_options_name = { &item_options_chat, 0, 0, 112, 10, ITEMTEXT | ITEMENABLED | HIGHBOX, 0, (APTR)&txt_player_name, 0, 0, 0, 0 };
-static struct MenuItem item_help_info = { 0, 0, 0, 60, 10, ITEMTEXT | ITEMENABLED | HIGHBOX, 0, (APTR)&txt_info, 0, 0, 0, 0 };
+static struct MenuItem item_project_quit = { 0, 0, 10, 92, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_quit, 0, 0, 0, 0 };
+static struct MenuItem item_project_new = { &item_project_quit, 0, 0, 92, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_new, 0, 0, 0, 0 };
+static struct MenuItem item_network_disconnect = { 0, 0, 20, 112, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_disconnect, 0, 0, 0, 0 };
+static struct MenuItem item_network_join = { &item_network_disconnect, 0, 10, 112, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_join, 0, 0, 0, 0 };
+static struct MenuItem item_network_host = { &item_network_join, 0, 0, 112, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_host, 0, 0, 0, 0 };
+static struct MenuItem item_options_chat = { 0, 0, 10, 112, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_chat, 0, 0, 0, 0 };
+static struct MenuItem item_options_name = { &item_options_chat, 0, 0, 112, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_player_name, 0, 0, 0, 0 };
+static struct MenuItem item_help_info = { 0, 0, 0, 60, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_info, 0, 0, 0, 0 };
 
 static struct Menu menu_help = { 0, 196, 0, 16, 10, MENUENABLED, (UBYTE *)"?", &item_help_info, 0, 0, 0, 0 };
 static struct Menu menu_options = { &menu_help, 120, 0, 76, 10, MENUENABLED, (UBYTE *)"Options", &item_options_name, 0, 0, 0, 0 };
@@ -33,105 +33,36 @@ void gui_layout(struct MC4App *app)
     WORD ww = app->win->Width;
     WORD wh = app->win->Height;
     WORD top = 8;
-    WORD avail_w = (WORD)(ww - 16);
-    WORD avail_h = (WORD)(wh - top - (app->cfg.chat_enabled ? 72 : 32));
-    WORD cell_w = (WORD)(avail_w / MC4_COLS);
-    WORD cell_h = (WORD)(avail_h / MC4_ROWS);
+    WORD bottom = 42;
+    WORD avail_w = (WORD)(ww - 12);
+    WORD avail_h = (WORD)(wh - top - bottom);
 
-    app->cell = cell_w < cell_h ? cell_w : cell_h;
-    if (app->cell < 18)
-        app->cell = 18;
-    app->board_w = (WORD)(app->cell * MC4_COLS);
-    app->board_h = (WORD)(app->cell * MC4_ROWS);
-    app->board_x = 8;
+    if (avail_w < MC4_COLS * 18)
+        avail_w = MC4_COLS * 18;
+    if (avail_h < MC4_ROWS * 18)
+        avail_h = MC4_ROWS * 18;
+
+    app->cell_w = (WORD)(avail_w / MC4_COLS);
+    app->cell_h = (WORD)(avail_h / MC4_ROWS);
+    if (app->cell_w < 18)
+        app->cell_w = 18;
+    if (app->cell_h < 18)
+        app->cell_h = 18;
+    app->cell = app->cell_w < app->cell_h ? app->cell_w : app->cell_h;
+    app->board_w = (WORD)(app->cell_w * MC4_COLS);
+    app->board_h = (WORD)(app->cell_h * MC4_ROWS);
+    app->board_x = 6;
     app->board_y = top;
-    app->status_y = (WORD)(app->board_y + app->board_h + 16);
-    app->chat_y = (WORD)(app->status_y + 16);
-
-}
-
-static WORD abs_word(WORD v)
-{
-    return v < 0 ? (WORD)-v : v;
+    app->status_y = (WORD)(app->board_y + app->board_h + 14);
+    app->chat_y = (WORD)(app->status_y + 12);
 }
 
 void gui_enforce_aspect(struct MC4App *app)
 {
-    WORD w;
-    WORD h;
-    WORD dw;
-    WORD dh;
-    WORD target_w;
-    WORD target_h;
-    WORD max_w;
-    WORD max_h;
-
     if (!app->win)
         return;
-
-    w = app->win->Width;
-    h = app->win->Height;
-    if (app->last_win_w == 0 || app->last_win_h == 0) {
-        app->last_win_w = w;
-        app->last_win_h = h;
-        return;
-    }
-
-    if (app->resize_lock) {
-        app->resize_lock = 0;
-        app->last_win_w = w;
-        app->last_win_h = h;
-        return;
-    }
-
-    dw = abs_word((WORD)(w - app->last_win_w));
-    dh = abs_word((WORD)(h - app->last_win_h));
-    target_w = w;
-    target_h = h;
-
-    if (dw >= dh)
-        target_h = (WORD)(((LONG)w * 220L + 195L) / 390L);
-    else
-        target_w = (WORD)(((LONG)h * 390L + 110L) / 220L);
-
-    if (target_w < 300)
-        target_w = 300;
-    if (target_h < 180)
-        target_h = 180;
-
-    max_w = 640;
-    max_h = 256;
-    if (app->screen) {
-        max_w = (WORD)(app->screen->Width - app->win->LeftEdge - 2);
-        max_h = (WORD)(app->screen->Height - app->win->TopEdge - 2);
-    }
-    if (max_w < 300)
-        max_w = 300;
-    if (max_h < 180)
-        max_h = 180;
-
-    if (target_h > max_h) {
-        target_h = max_h;
-        target_w = (WORD)(((LONG)target_h * 390L + 110L) / 220L);
-    }
-    if (target_w > max_w) {
-        target_w = max_w;
-        target_h = (WORD)(((LONG)target_w * 220L + 195L) / 390L);
-    }
-    if (target_w < 300)
-        target_w = 300;
-    if (target_h < 180)
-        target_h = 180;
-
-    if (target_w != w || target_h != h) {
-        app->resize_lock = 1;
-        SizeWindow(app->win, (WORD)(target_w - w), (WORD)(target_h - h));
-        app->last_win_w = target_w;
-        app->last_win_h = target_h;
-    } else {
-        app->last_win_w = w;
-        app->last_win_h = h;
-    }
+    app->last_win_w = app->win->Width;
+    app->last_win_h = app->win->Height;
 }
 
 int gui_open(struct MC4App *app)
@@ -207,7 +138,7 @@ int gui_hit_column(struct MC4App *app, WORD x, WORD y)
         return -1;
     if (y < app->board_y || y >= app->board_y + app->board_h)
         return -1;
-    return (x - app->board_x) / app->cell;
+    return (x - app->board_x) / app->cell_w;
 }
 
 void gui_set_status(struct MC4App *app, const char *s)

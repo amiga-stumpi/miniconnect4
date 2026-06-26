@@ -75,6 +75,8 @@ struct MC4App {
     WORD board_x;
     WORD board_y;
     WORD cell;
+    WORD cell_w;
+    WORD cell_h;
     WORD board_w;
     WORD board_h;
     WORD status_y;
