@@ -198,20 +198,15 @@ void sound_play(int id)
 
 const char *sound_test(void)
 {
-    BYTE *tone;
-    ULONG i;
-    ULONG len = 8000;
+    int i;
 
-    tone = (BYTE *)AllocMem(len, MEMF_CHIP | MEMF_PUBLIC);
-    if (!tone) {
-        set_status("tone no chip ram");
+    if (!g_sound_ready) {
+        set_status("sound not ready");
         return sound_status();
     }
-    for (i = 0; i < len; ++i)
-        tone[i] = ((i / 16) & 1) ? 100 : -100;
 
-    paula_play_raw(tone, len, SOUND_PERIOD_8KHZ, 50);
-    FreeMem(tone, len);
-    set_status("paula tone sent");
+    for (i = 0; i < SOUND_COUNT; ++i)
+        paula_play_raw(g_chip_data[i], g_chip_len[i], SOUND_PERIOD_8KHZ, g_max_ticks[i]);
+    set_status("all sounds sent");
     return sound_status();
 }

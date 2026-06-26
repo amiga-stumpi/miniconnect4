@@ -53,6 +53,7 @@ static int is_default_lobby(const char *s)
 void app_new_game(struct MC4App *app)
 {
     UBYTE local = app->game.local_player;
+    sound_play(MC4_SOUND_START);
     game_init(&app->game);
     app->game.local_player = local ? local : MC4_P1;
     app->my_turn = (app->net_state != MC4_NET_CONNECTED || app->game.local_player == MC4_P1) ? 1 : 0;
@@ -98,6 +99,7 @@ void app_local_move(struct MC4App *app, int col, int send_net)
             util_copy(msg, sizeof(msg), "Player ");
             util_append(msg, sizeof(msg), player == MC4_P1 ? "1 wins" : "2 wins");
             gui_set_status(app, msg);
+            sound_play(player == app->game.local_player ? MC4_SOUND_WIN : MC4_SOUND_LOSE);
         }
     } else if (app->game.game_over) {
         gui_set_status(app, "Draw");
