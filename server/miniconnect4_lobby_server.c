@@ -28,6 +28,7 @@ struct Client {
     int pending_to;
     time_t pending_time;
     int rematch;
+    int role;
 };
 
 static struct Client clients[MAX_CLIENTS];
@@ -146,6 +147,7 @@ static void close_client(int idx)
     clients[idx].pending_to = -1;
     clients[idx].pending_time = 0;
     clients[idx].rematch = -1;
+    clients[idx].role = 0;
     if (peer >= 0 && clients[peer].fd >= 0) {
         clients[peer].busy = 0;
         clients[peer].peer = -1;
@@ -153,6 +155,7 @@ static void close_client(int idx)
         clients[peer].pending_to = -1;
         clients[peer].pending_time = 0;
         clients[peer].rematch = -1;
+        clients[peer].role = 0;
         send_line(clients[peer].fd, "QUIT");
     }
     broadcast_users();
@@ -207,9 +210,11 @@ static void lobby_chat(int idx, const char *text)
     }
 }
 
-static void start_game(int a, int b)
+static void start_game_roles(int a, int b, int role_a, int role_b)
 {
     char line[BUF_LEN];
+    const char *ra = role_a == 2 ? "P2" : "P1";
+    const char *rb = role_b == 1 ? "P1" : "P2";
     clear_pending_pair(a, b);
     clients[a].busy = 1;
     clients[b].busy = 1;
@@ -217,11 +222,31 @@ static void start_game(int a, int b)
     clients[b].peer = a;
     clients[a].rematch = -1;
     clients[b].rematch = -1;
-    snprintf(line, sizeof(line), "START %s P1", clients[b].name);
+    clients[a].role = role_a == 2 ? 2 : 1;
+    clients[b].role = role_b == 1 ? 1 : 2;
+    snprintf(line, sizeof(line), "START %s %s", clients[b].name, ra);
     send_line(clients[a].fd, line);
-    snprintf(line, sizeof(line), "START %s P2", clients[a].name);
+    snprintf(line, sizeof(line), "START %s %s", clients[a].name, rb);
     send_line(clients[b].fd, line);
     broadcast_users();
+}
+
+static void start_game(int a, int b)
+{
+    start_game_roles(a, b, 1, 2);
+}
+
+static void start_rematch(int a, int b)
+{
+    int role_a = clients[a].role;
+    int role_b = clients[b].role;
+    if (role_a != 1 && role_a != 2)
+        role_a = 1;
+    if (role_b != 1 && role_b != 2)
+        role_b = role_a == 1 ? 2 : 1;
+    if (role_a == role_b)
+        role_b = role_a == 1 ? 2 : 1;
+    start_game_roles(a, b, role_a, role_b);
 }
 
 
@@ -231,12 +256,14 @@ static void return_pair_to_lobby(int a, int b)
         clients[a].busy = 0;
         clients[a].peer = -1;
         clients[a].rematch = -1;
+        clients[a].role = 0;
         send_line(clients[a].fd, "LOBBY");
     }
     if (b >= 0 && clients[b].fd >= 0) {
         clients[b].busy = 0;
         clients[b].peer = -1;
         clients[b].rematch = -1;
+        clients[b].role = 0;
         send_line(clients[b].fd, "LOBBY");
     }
     broadcast_users();
@@ -249,6 +276,7 @@ static void handle_rematch(int idx, int yes)
         clients[idx].busy = 0;
         clients[idx].peer = -1;
         clients[idx].rematch = -1;
+        clients[idx].role = 0;
         send_line(clients[idx].fd, "LOBBY");
         broadcast_users();
         return;
@@ -259,7 +287,7 @@ static void handle_rematch(int idx, int yes)
         return;
     }
     if (clients[peer].rematch == 1)
-        start_game(idx, peer);
+        start_rematch(idx, peer);
     else
         send_line(clients[idx].fd, "REMATCHWAIT");
 }
@@ -380,6 +408,7 @@ int main(int argc, char **argv)
         clients[i].pending_from = -1;
         clients[i].pending_to = -1;
         clients[i].rematch = -1;
+        clients[i].role = 0;
     }
 
     listen_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -433,6 +462,7 @@ int main(int argc, char **argv)
                 clients[idx].pending_to = -1;
                 clients[idx].pending_time = 0;
                 clients[idx].rematch = -1;
+                clients[idx].role = 0;
                 send_line(fd, "HELLO MiniConnect4Lobby");
             } else if (fd >= 0) {
                 send_line(fd, "LOBBYCHAT Server: lobby full");
