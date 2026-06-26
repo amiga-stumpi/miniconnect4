@@ -1,0 +1,3 @@
+build/
+*.o
+MiniConnect4.conf
