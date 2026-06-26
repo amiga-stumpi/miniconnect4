@@ -36,4 +36,4 @@ build/MiniConnect4
 ## Config
 
 A default config is created/saved as `MiniConnect4.conf` in the current directory.
-Edit `host=` to set the remote host used by the `Join` button.
+Edit `host=` to set the remote host used by `Network -> Join Game`.

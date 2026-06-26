@@ -8,8 +8,6 @@
 #define PEN_P1 2
 #define PEN_P2 3
 #define PEN_GRID 1
-#define PEN_BUTTON 2
-#define PEN_BUTTON_TEXT 1
 
 static void draw_text(struct RastPort *rp, WORD x, WORD y, const char *s, UBYTE pen)
 {
@@ -81,18 +79,6 @@ static void draw_board(struct MC4App *app)
                app->board_x + app->board_w, app->board_y + app->board_h, PEN_TEXT);
 }
 
-static void draw_buttons(struct MC4App *app)
-{
-    UWORD i;
-    struct MC4Button *b;
-    for (i = 0; i < app->button_count; ++i) {
-        b = &app->buttons[i];
-        fill_rect(app->rp, b->x, b->y, b->x + b->w, b->y + b->h, PEN_BUTTON);
-        frame_rect(app->rp, b->x, b->y, b->x + b->w, b->y + b->h, PEN_TEXT);
-        draw_text(app->rp, b->x + 5, b->y + 13, b->label, PEN_BUTTON_TEXT);
-    }
-}
-
 void gui_draw_status(struct MC4App *app)
 {
     char turn[40];
@@ -126,7 +112,6 @@ void gui_draw_all(struct MC4App *app)
         return;
     fill_rect(app->rp, 0, 0, app->win->Width - 1, app->win->Height - 1, PEN_BG);
     draw_board(app);
-    draw_buttons(app);
     gui_draw_status(app);
     gui_draw_chat(app);
 }

@@ -4,34 +4,36 @@
 #include <proto/dos.h>
 #include "miniconnect4.h"
 
-#define BTN_NEW 1
-#define BTN_HOST 2
-#define BTN_JOIN 3
-#define BTN_DISC 4
-#define BTN_CHAT 5
-#define BTN_INFO 6
-#define BTN_QUIT 7
+static struct IntuiText txt_new = { 1, 0, JAM1, 0, 1, 0, (UBYTE *)"New Game", 0 };
+static struct IntuiText txt_quit = { 1, 0, JAM1, 0, 1, 0, (UBYTE *)"Quit", 0 };
+static struct IntuiText txt_host = { 1, 0, JAM1, 0, 1, 0, (UBYTE *)"Host Game", 0 };
+static struct IntuiText txt_join = { 1, 0, JAM1, 0, 1, 0, (UBYTE *)"Join Game", 0 };
+static struct IntuiText txt_disconnect = { 1, 0, JAM1, 0, 1, 0, (UBYTE *)"Disconnect", 0 };
+static struct IntuiText txt_chat = { 1, 0, JAM1, 0, 1, 0, (UBYTE *)"Toggle Chat", 0 };
+static struct IntuiText txt_info = { 1, 0, JAM1, 0, 1, 0, (UBYTE *)"Info", 0 };
 
+static struct MenuItem item_project_quit = { 0, 0, 10, 92, 10, ITEMTEXT | ITEMENABLED | HIGHBOX, 0, (APTR)&txt_quit, 0, 0, 0, 0 };
+static struct MenuItem item_project_new = { &item_project_quit, 0, 0, 92, 10, ITEMTEXT | ITEMENABLED | HIGHBOX, 0, (APTR)&txt_new, 0, 0, 0, 0 };
+static struct MenuItem item_network_disconnect = { 0, 0, 20, 112, 10, ITEMTEXT | ITEMENABLED | HIGHBOX, 0, (APTR)&txt_disconnect, 0, 0, 0, 0 };
+static struct MenuItem item_network_join = { &item_network_disconnect, 0, 10, 112, 10, ITEMTEXT | ITEMENABLED | HIGHBOX, 0, (APTR)&txt_join, 0, 0, 0, 0 };
+static struct MenuItem item_network_host = { &item_network_join, 0, 0, 112, 10, ITEMTEXT | ITEMENABLED | HIGHBOX, 0, (APTR)&txt_host, 0, 0, 0, 0 };
+static struct MenuItem item_options_chat = { 0, 0, 0, 112, 10, ITEMTEXT | ITEMENABLED | HIGHBOX, 0, (APTR)&txt_chat, 0, 0, 0, 0 };
+static struct MenuItem item_help_info = { 0, 0, 0, 60, 10, ITEMTEXT | ITEMENABLED | HIGHBOX, 0, (APTR)&txt_info, 0, 0, 0, 0 };
 
-static void set_button(struct MC4Button *b, WORD x, WORD y, WORD w, WORD h, UWORD id, const char *label)
-{
-    b->x = x; b->y = y; b->w = w; b->h = h; b->id = id; b->label = label;
-}
+static struct Menu menu_help = { 0, 196, 0, 16, 10, MENUENABLED, (UBYTE *)"?", &item_help_info, 0, 0, 0, 0 };
+static struct Menu menu_options = { &menu_help, 120, 0, 76, 10, MENUENABLED, (UBYTE *)"Options", &item_options_chat, 0, 0, 0, 0 };
+static struct Menu menu_network = { &menu_options, 54, 0, 66, 10, MENUENABLED, (UBYTE *)"Network", &item_network_host, 0, 0, 0, 0 };
+static struct Menu menu_project = { &menu_network, 0, 0, 54, 10, MENUENABLED, (UBYTE *)"Project", &item_project_new, 0, 0, 0, 0 };
 
 void gui_layout(struct MC4App *app)
 {
     WORD ww = app->win->Width;
     WORD wh = app->win->Height;
     WORD top = 8;
-    WORD side = 100;
-    WORD gap = 8;
-    WORD avail_w = (WORD)(ww - side - gap - 16);
+    WORD avail_w = (WORD)(ww - 16);
     WORD avail_h = (WORD)(wh - top - (app->cfg.chat_enabled ? 72 : 32));
     WORD cell_w = (WORD)(avail_w / MC4_COLS);
     WORD cell_h = (WORD)(avail_h / MC4_ROWS);
-    WORD by;
-    WORD bx;
-    UWORD n = 0;
 
     app->cell = cell_w < cell_h ? cell_w : cell_h;
     if (app->cell < 18)
@@ -43,21 +45,6 @@ void gui_layout(struct MC4App *app)
     app->status_y = (WORD)(app->board_y + app->board_h + 16);
     app->chat_y = (WORD)(app->status_y + 16);
 
-    bx = (WORD)(app->board_x + app->board_w + gap);
-    if (bx + 88 > ww - 4)
-        bx = (WORD)(ww - 92);
-    if (bx < app->board_x + app->board_w + 2)
-        bx = (WORD)(app->board_x + app->board_w + 2);
-
-    by = top;
-    set_button(&app->buttons[n++], bx, by, 88, 16, BTN_NEW, "New"); by += 20;
-    set_button(&app->buttons[n++], bx, by, 88, 16, BTN_HOST, "Host"); by += 20;
-    set_button(&app->buttons[n++], bx, by, 88, 16, BTN_JOIN, "Join"); by += 20;
-    set_button(&app->buttons[n++], bx, by, 88, 16, BTN_DISC, "Disconnect"); by += 20;
-    set_button(&app->buttons[n++], bx, by, 88, 16, BTN_CHAT, app->cfg.chat_enabled ? "Chat On" : "Chat Off"); by += 20;
-    set_button(&app->buttons[n++], bx, by, 88, 16, BTN_INFO, "Info"); by += 20;
-    set_button(&app->buttons[n++], bx, by, 88, 16, BTN_QUIT, "Quit");
-    app->button_count = n;
 }
 
 static WORD abs_word(WORD v)
@@ -166,7 +153,7 @@ int gui_open(struct MC4App *app)
         nw.Height = i == 0 ? h : (i == 1 ? 200 : 180);
         nw.DetailPen = 0;
         nw.BlockPen = 1;
-        nw.IDCMPFlags = IDCMP_CLOSEWINDOW | IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY | IDCMP_NEWSIZE | IDCMP_REFRESHWINDOW;
+        nw.IDCMPFlags = IDCMP_CLOSEWINDOW | IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY | IDCMP_NEWSIZE | IDCMP_REFRESHWINDOW | IDCMP_MENUPICK;
         nw.Flags = WFLG_CLOSEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_SMART_REFRESH | WFLG_ACTIVATE;
         if (i < 2)
             nw.Flags |= WFLG_SIZEGADGET;
@@ -188,6 +175,7 @@ int gui_open(struct MC4App *app)
         return 0;
     app->rp = app->win->RPort;
     app->screen = app->win->WScreen;
+    SetMenuStrip(app->win, &menu_project);
     gui_layout(app);
     gui_draw_all(app);
     app->last_win_w = app->win->Width;
@@ -198,6 +186,7 @@ int gui_open(struct MC4App *app)
 void gui_close(struct MC4App *app)
 {
     if (app->win) {
+        ClearMenuStrip(app->win);
         app->cfg.win_x = app->win->LeftEdge;
         app->cfg.win_y = app->win->TopEdge;
         app->cfg.win_w = app->win->Width;
@@ -207,18 +196,6 @@ void gui_close(struct MC4App *app)
     }
     if (GfxBase) { CloseLibrary((struct Library *)GfxBase); GfxBase = 0; }
     if (IntuitionBase) { CloseLibrary((struct Library *)IntuitionBase); IntuitionBase = 0; }
-}
-
-int gui_hit_button(struct MC4App *app, WORD x, WORD y)
-{
-    UWORD i;
-    struct MC4Button *b;
-    for (i = 0; i < app->button_count; ++i) {
-        b = &app->buttons[i];
-        if (x >= b->x && x <= b->x + b->w && y >= b->y && y <= b->y + b->h)
-            return b->id;
-    }
-    return 0;
 }
 
 int gui_hit_column(struct MC4App *app, WORD x, WORD y)

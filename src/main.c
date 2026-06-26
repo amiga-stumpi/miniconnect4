@@ -63,38 +63,35 @@ void app_local_move(struct MC4App *app, int col, int send_net)
     gui_draw_status(app);
 }
 
-static void do_button(struct MC4App *app, int id)
+static void do_menu(struct MC4App *app, UWORD menu, UWORD item)
 {
-    switch (id) {
-    case 1:
-        app_new_game(app);
-        net_send_newgame(app);
-        break;
-    case 2:
-        app_new_game(app);
-        net_host(app);
-        break;
-    case 3:
-        app_new_game(app);
-        net_connect(app, app->cfg.host, app->cfg.port);
-        break;
-    case 4:
-        net_close(app);
-        gui_set_status(app, "Offline local game");
-        break;
-    case 5:
-        app->cfg.chat_enabled = app->cfg.chat_enabled ? 0 : 1;
-        gui_layout(app);
-        gui_draw_all(app);
-        break;
-    case 6:
-        gui_info(app);
-        break;
-    case 7:
-        app->running = 0;
-        break;
-    default:
-        break;
+    if (menu == MC4_MENU_PROJECT) {
+        if (item == MC4_PROJECT_NEW) {
+            app_new_game(app);
+            net_send_newgame(app);
+        } else if (item == MC4_PROJECT_QUIT) {
+            app->running = 0;
+        }
+    } else if (menu == MC4_MENU_NETWORK) {
+        if (item == MC4_NETWORK_HOST) {
+            app_new_game(app);
+            net_host(app);
+        } else if (item == MC4_NETWORK_JOIN) {
+            app_new_game(app);
+            net_connect(app, app->cfg.host, app->cfg.port);
+        } else if (item == MC4_NETWORK_DISCONNECT) {
+            net_close(app);
+            gui_set_status(app, "Offline local game");
+        }
+    } else if (menu == MC4_MENU_OPTIONS) {
+        if (item == MC4_OPTIONS_CHAT) {
+            app->cfg.chat_enabled = app->cfg.chat_enabled ? 0 : 1;
+            gui_layout(app);
+            gui_draw_all(app);
+        }
+    } else if (menu == MC4_MENU_HELP) {
+        if (item == MC4_HELP_INFO)
+            gui_info(app);
     }
 }
 
@@ -138,7 +135,6 @@ static void event_loop(struct MC4App *app)
     ULONG classv;
     UWORD code;
     WORD mx, my;
-    int id;
     int col;
 
     sigmask = 1L << app->win->UserPort->mp_SigBit;
@@ -164,16 +160,14 @@ static void event_loop(struct MC4App *app)
                 gui_draw_all(app);
                 EndRefresh(app->win, TRUE);
             } else if (classv == IDCMP_MOUSEBUTTONS && code == SELECTDOWN) {
-                id = gui_hit_button(app, mx, my);
-                if (id) {
-                    do_button(app, id);
-                } else {
-                    col = gui_hit_column(app, mx, my);
-                    if (col >= 0)
-                        app_local_move(app, col, 1);
-                }
+                col = gui_hit_column(app, mx, my);
+                if (col >= 0)
+                    app_local_move(app, col, 1);
             } else if (classv == IDCMP_RAWKEY) {
                 handle_key(app, code);
+            } else if (classv == IDCMP_MENUPICK) {
+                if (code != MENUNULL)
+                    do_menu(app, MENUNUM(code), ITEMNUM(code));
             }
         }
         net_poll(app);

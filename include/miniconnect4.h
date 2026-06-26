@@ -29,6 +29,19 @@
 #define MC4_NET_CONNECTING 2
 #define MC4_NET_CONNECTED 3
 
+#define MC4_MENU_PROJECT 0
+#define MC4_MENU_NETWORK 1
+#define MC4_MENU_OPTIONS 2
+#define MC4_MENU_HELP 3
+
+#define MC4_PROJECT_NEW 0
+#define MC4_PROJECT_QUIT 1
+#define MC4_NETWORK_HOST 0
+#define MC4_NETWORK_JOIN 1
+#define MC4_NETWORK_DISCONNECT 2
+#define MC4_OPTIONS_CHAT 0
+#define MC4_HELP_INFO 0
+
 struct MC4Config {
     WORD win_x;
     WORD win_y;
@@ -52,23 +65,12 @@ struct MC4Game {
     WORD last_row;
 };
 
-struct MC4Button {
-    WORD x;
-    WORD y;
-    WORD w;
-    WORD h;
-    UWORD id;
-    const char *label;
-};
-
 struct MC4App {
     struct Window *win;
     struct Screen *screen;
     struct RastPort *rp;
     struct MC4Config cfg;
     struct MC4Game game;
-    struct MC4Button buttons[8];
-    UWORD button_count;
     WORD board_x;
     WORD board_y;
     WORD cell;
@@ -116,7 +118,6 @@ void gui_draw_status(struct MC4App *app);
 void gui_draw_chat(struct MC4App *app);
 void gui_draw_cell(struct MC4App *app, int row, int col, UBYTE value);
 void gui_animate_drop(struct MC4App *app, int col, int row, UBYTE player);
-int gui_hit_button(struct MC4App *app, WORD x, WORD y);
 int gui_hit_column(struct MC4App *app, WORD x, WORD y);
 void gui_set_status(struct MC4App *app, const char *s);
 void gui_add_chat(struct MC4App *app, const char *s);
