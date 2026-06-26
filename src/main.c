@@ -146,6 +146,9 @@ static void do_menu(struct MC4App *app, UWORD menu, UWORD item)
             app->cfg.chat_enabled = app->cfg.chat_enabled ? 0 : 1;
             gui_layout(app);
             gui_draw_all(app);
+        } else if (item == MC4_OPTIONS_SOUND_STATUS) {
+            sound_play(MC4_SOUND_MOVE);
+            gui_set_status(app, sound_status());
         }
     } else if (menu == MC4_MENU_HELP) {
         if (item == MC4_HELP_INFO)
