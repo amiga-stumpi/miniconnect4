@@ -1,26 +1,32 @@
 #include <exec/types.h>
-#include <exec/io.h>
 #include <exec/memory.h>
-#include <devices/audio.h>
 #include <proto/exec.h>
+#include <proto/dos.h>
 #include <clib/alib_protos.h>
+#include <clib/graphics_protos.h>
 #include "sound.h"
 #include "sound_data.h"
 
 #define SOUND_COUNT 5
 #define SOUND_PERIOD_8KHZ 447
 #define SOUND_VOLUME 64
+#define PAULA_CUSTOM ((volatile UWORD *)0xdff000)
+#define REG_DMACON (0x096 / 2)
+#define REG_AUD0LCH (0x0a0 / 2)
+#define REG_AUD0LCL (0x0a2 / 2)
+#define REG_AUD0LEN (0x0a4 / 2)
+#define REG_AUD0PER (0x0a6 / 2)
+#define REG_AUD0VOL (0x0a8 / 2)
+#define REG_AUD1LCH (0x0b0 / 2)
+#define REG_AUD1LCL (0x0b2 / 2)
+#define REG_AUD1LEN (0x0b4 / 2)
+#define REG_AUD1PER (0x0b6 / 2)
+#define REG_AUD1VOL (0x0b8 / 2)
 
-static struct MsgPort *g_audio_port;
-static struct IOAudio *g_audio_alloc_io;
-static struct IOAudio *g_audio_write_io;
 static BYTE *g_chip_data[SOUND_COUNT];
 static ULONG g_chip_len[SOUND_COUNT];
-static UBYTE g_audio_open;
-static UBYTE g_audio_busy;
+static UBYTE g_sound_ready;
 static char g_sound_status[64] = "sound not initialized";
-
-static int sound_prepare_raw(BYTE *data, ULONG len, UWORD period);
 
 static const BYTE *const g_src_data[SOUND_COUNT] = {
     sound_move_data,
@@ -53,6 +59,54 @@ const char *sound_status(void)
     return g_sound_status;
 }
 
+static void paula_stop(void)
+{
+    PAULA_CUSTOM[REG_DMACON] = 0x0003;
+}
+
+static void paula_play_raw(BYTE *data, ULONG len, UWORD period, UWORD max_ticks)
+{
+    ULONG addr;
+    UWORD words;
+    UWORD ticks;
+
+    if (!data || len < 2) {
+        set_status("paula bad data");
+        return;
+    }
+
+    addr = (ULONG)data;
+    words = (UWORD)(len >> 1);
+    if (words == 0)
+        words = 1;
+
+    ticks = (UWORD)(len / 160);
+    if (ticks == 0)
+        ticks = 1;
+    if (max_ticks && ticks > max_ticks)
+        ticks = max_ticks;
+
+    paula_stop();
+    WaitTOF();
+
+    PAULA_CUSTOM[REG_AUD0LCH] = (UWORD)(addr >> 16);
+    PAULA_CUSTOM[REG_AUD0LCL] = (UWORD)addr;
+    PAULA_CUSTOM[REG_AUD0LEN] = words;
+    PAULA_CUSTOM[REG_AUD0PER] = period;
+    PAULA_CUSTOM[REG_AUD0VOL] = SOUND_VOLUME;
+
+    PAULA_CUSTOM[REG_AUD1LCH] = (UWORD)(addr >> 16);
+    PAULA_CUSTOM[REG_AUD1LCL] = (UWORD)addr;
+    PAULA_CUSTOM[REG_AUD1LEN] = words;
+    PAULA_CUSTOM[REG_AUD1PER] = period;
+    PAULA_CUSTOM[REG_AUD1VOL] = SOUND_VOLUME;
+
+    PAULA_CUSTOM[REG_DMACON] = 0x8203;
+    Delay(ticks);
+    paula_stop();
+    set_status("paula sound sent");
+}
+
 static void free_chip_samples(void)
 {
     int i;
@@ -83,161 +137,32 @@ static int copy_chip_samples(void)
 
 void sound_init(void)
 {
-    static UBYTE channels[4] = { 1, 2, 4, 8 };
-
-    if (g_audio_open)
+    if (g_sound_ready)
         return;
     if (!copy_chip_samples())
         return;
-
-    set_status("sound init");
-    g_audio_port = CreatePort(0, 0);
-    if (!g_audio_port) {
-        set_status("sound no port");
-        free_chip_samples();
-        return;
-    }
-    g_audio_alloc_io = (struct IOAudio *)CreateExtIO(g_audio_port, sizeof(struct IOAudio));
-    g_audio_write_io = (struct IOAudio *)CreateExtIO(g_audio_port, sizeof(struct IOAudio));
-    if (!g_audio_alloc_io || !g_audio_write_io) {
-        set_status("sound no io");
-        if (g_audio_write_io)
-            DeleteExtIO((struct IORequest *)g_audio_write_io);
-        if (g_audio_alloc_io)
-            DeleteExtIO((struct IORequest *)g_audio_alloc_io);
-        DeletePort(g_audio_port);
-        g_audio_write_io = 0;
-        g_audio_alloc_io = 0;
-        g_audio_port = 0;
-        free_chip_samples();
-        return;
-    }
-
-    g_audio_alloc_io->ioa_Request.io_Message.mn_Node.ln_Pri = ADALLOC_MAXPREC;
-    g_audio_alloc_io->ioa_Data = channels;
-    g_audio_alloc_io->ioa_Length = sizeof(channels);
-    if (OpenDevice((STRPTR)AUDIONAME, 0, (struct IORequest *)g_audio_alloc_io, 0) != 0) {
-        set_status("sound open failed");
-        DeleteExtIO((struct IORequest *)g_audio_write_io);
-        DeleteExtIO((struct IORequest *)g_audio_alloc_io);
-        DeletePort(g_audio_port);
-        g_audio_write_io = 0;
-        g_audio_alloc_io = 0;
-        g_audio_port = 0;
-        free_chip_samples();
-        return;
-    }
-    *g_audio_write_io = *g_audio_alloc_io;
-    g_audio_open = 1;
-    g_audio_busy = 0;
-    set_status("sound ready");
+    g_sound_ready = 1;
+    set_status("paula sound ready");
 }
 
 void sound_shutdown(void)
 {
-    if (g_audio_write_io) {
-        if (g_audio_busy && !CheckIO((struct IORequest *)g_audio_write_io)) {
-            AbortIO((struct IORequest *)g_audio_write_io);
-            WaitIO((struct IORequest *)g_audio_write_io);
-        } else if (g_audio_busy) {
-            WaitIO((struct IORequest *)g_audio_write_io);
-        }
-        DeleteExtIO((struct IORequest *)g_audio_write_io);
-        g_audio_write_io = 0;
-    }
-    if (g_audio_alloc_io) {
-        if (g_audio_open)
-            CloseDevice((struct IORequest *)g_audio_alloc_io);
-        DeleteExtIO((struct IORequest *)g_audio_alloc_io);
-        g_audio_alloc_io = 0;
-    }
-    if (g_audio_port) {
-        DeletePort(g_audio_port);
-        g_audio_port = 0;
-    }
-    g_audio_open = 0;
-    g_audio_busy = 0;
+    paula_stop();
+    g_sound_ready = 0;
     free_chip_samples();
-}
-
-static int sound_prepare_write(int id)
-{
-    if (!g_audio_open || !g_audio_write_io) {
-        set_status("sound not open");
-        return 0;
-    }
-    if (id < 0 || id >= SOUND_COUNT || !g_chip_data[id]) {
-        set_status("sound bad id");
-        return 0;
-    }
-
-    if (g_audio_busy) {
-        if (!CheckIO((struct IORequest *)g_audio_write_io)) {
-            AbortIO((struct IORequest *)g_audio_write_io);
-            WaitIO((struct IORequest *)g_audio_write_io);
-        } else {
-            WaitIO((struct IORequest *)g_audio_write_io);
-        }
-        g_audio_busy = 0;
-    }
-
-    return sound_prepare_raw(g_chip_data[id], g_chip_len[id], SOUND_PERIOD_8KHZ);
-}
-
-
-static const char *finish_status(void)
-{
-    if (g_audio_write_io->ioa_Request.io_Error == 0)
-        set_status("synthetic tone ok");
-    else if (g_audio_write_io->ioa_Request.io_Error == ADIOERR_NOALLOCATION)
-        set_status("sound err no allocation");
-    else if (g_audio_write_io->ioa_Request.io_Error == ADIOERR_ALLOCFAILED)
-        set_status("sound err alloc failed");
-    else if (g_audio_write_io->ioa_Request.io_Error == ADIOERR_CHANNELSTOLEN)
-        set_status("sound err channel stolen");
-    else
-        set_status("sound err other");
-    return sound_status();
-}
-
-static int sound_prepare_raw(BYTE *data, ULONG len, UWORD period)
-{
-    if (!g_audio_open || !g_audio_write_io) {
-        set_status("sound not open");
-        return 0;
-    }
-    if (!data || len == 0) {
-        set_status("sound bad data");
-        return 0;
-    }
-
-    if (g_audio_busy) {
-        if (!CheckIO((struct IORequest *)g_audio_write_io)) {
-            AbortIO((struct IORequest *)g_audio_write_io);
-            WaitIO((struct IORequest *)g_audio_write_io);
-        } else {
-            WaitIO((struct IORequest *)g_audio_write_io);
-        }
-        g_audio_busy = 0;
-    }
-
-    g_audio_write_io->ioa_Request.io_Command = CMD_WRITE;
-    g_audio_write_io->ioa_Request.io_Flags = ADIOF_PERVOL;
-    g_audio_write_io->ioa_Data = (UBYTE *)data;
-    g_audio_write_io->ioa_Length = len;
-    g_audio_write_io->ioa_Period = period;
-    g_audio_write_io->ioa_Volume = SOUND_VOLUME;
-    g_audio_write_io->ioa_Cycles = 1;
-    return 1;
 }
 
 void sound_play(int id)
 {
-    if (!sound_prepare_write(id))
+    if (!g_sound_ready) {
+        set_status("sound not ready");
         return;
-    SendIO((struct IORequest *)g_audio_write_io);
-    g_audio_busy = 1;
-    set_status("sound write sent");
+    }
+    if (id < 0 || id >= SOUND_COUNT || !g_chip_data[id]) {
+        set_status("sound bad id");
+        return;
+    }
+    paula_play_raw(g_chip_data[id], g_chip_len[id], SOUND_PERIOD_8KHZ, 10);
 }
 
 const char *sound_test(void)
@@ -254,12 +179,8 @@ const char *sound_test(void)
     for (i = 0; i < len; ++i)
         tone[i] = ((i / 16) & 1) ? 100 : -100;
 
-    if (!sound_prepare_raw(tone, len, SOUND_PERIOD_8KHZ)) {
-        FreeMem(tone, len);
-        return sound_status();
-    }
-    DoIO((struct IORequest *)g_audio_write_io);
-    g_audio_busy = 0;
+    paula_play_raw(tone, len, SOUND_PERIOD_8KHZ, 50);
     FreeMem(tone, len);
-    return finish_status();
+    set_status("paula tone sent");
+    return sound_status();
 }
