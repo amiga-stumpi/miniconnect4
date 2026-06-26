@@ -6,6 +6,13 @@
 #include <proto/intuition.h>
 #include "miniconnect4.h"
 
+#ifndef IEQUALIFIER_LSHIFT
+#define IEQUALIFIER_LSHIFT 0x0001
+#endif
+#ifndef IEQUALIFIER_RSHIFT
+#define IEQUALIFIER_RSHIFT 0x0002
+#endif
+
 ULONG __stack = 32000;
 
 extern void chat_submit(struct MC4App *app);
@@ -141,30 +148,50 @@ static void do_menu(struct MC4App *app, UWORD menu, UWORD item)
     }
 }
 
-static char rawkey_to_char(UWORD code)
+static char rawkey_to_char(UWORD code, UWORD qualifier)
 {
+    int shift = (qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)) ? 1 : 0;
+    char c = 0;
+
     switch (code) {
-        case 0x02: return '1'; case 0x03: return '2'; case 0x04: return '3';
-        case 0x05: return '4'; case 0x06: return '5'; case 0x07: return '6';
-        case 0x08: return '7'; case 0x09: return '8'; case 0x0a: return '9';
-        case 0x0b: return '0';
-        case 0x10: return 'q'; case 0x11: return 'w'; case 0x12: return 'e';
-        case 0x13: return 'r'; case 0x14: return 't'; case 0x15: return 'y';
-        case 0x16: return 'u'; case 0x17: return 'i'; case 0x18: return 'o';
-        case 0x19: return 'p';
-        case 0x20: return 'a'; case 0x21: return 's'; case 0x22: return 'd';
-        case 0x23: return 'f'; case 0x24: return 'g'; case 0x25: return 'h';
-        case 0x26: return 'j'; case 0x27: return 'k'; case 0x28: return 'l';
-        case 0x31: return 'z'; case 0x32: return 'x'; case 0x33: return 'c';
-        case 0x34: return 'v'; case 0x35: return 'b'; case 0x36: return 'n';
-        case 0x37: return 'm';
-        case 0x38: return ','; case 0x39: return '.'; case 0x3a: return '/';
+        case 0x02: return shift ? '!' : '1';
+        case 0x03: return shift ? '"' : '2';
+        case 0x04: return shift ? '#' : '3';
+        case 0x05: return shift ? '$' : '4';
+        case 0x06: return shift ? '%' : '5';
+        case 0x07: return shift ? '&' : '6';
+        case 0x08: return shift ? '/' : '7';
+        case 0x09: return shift ? '(' : '8';
+        case 0x0a: return shift ? ')' : '9';
+        case 0x0b: return shift ? '=' : '0';
+        case 0x0c: return shift ? '?' : '-';
+        case 0x0d: return shift ? '`' : '\'';
+        case 0x1a: return shift ? '{' : '[';
+        case 0x1b: return shift ? '}' : ']';
+        case 0x29: return shift ? ':' : ';';
+        case 0x2a: return shift ? '@' : '#';
+        case 0x30: return shift ? '>' : '<';
+        case 0x38: return shift ? ';' : ',';
+        case 0x39: return shift ? ':' : '.';
+        case 0x3a: return shift ? '_' : '/';
         case 0x40: return ' ';
+        case 0x10: c = 'q'; break; case 0x11: c = 'w'; break; case 0x12: c = 'e'; break;
+        case 0x13: c = 'r'; break; case 0x14: c = 't'; break; case 0x15: c = 'y'; break;
+        case 0x16: c = 'u'; break; case 0x17: c = 'i'; break; case 0x18: c = 'o'; break;
+        case 0x19: c = 'p'; break;
+        case 0x20: c = 'a'; break; case 0x21: c = 's'; break; case 0x22: c = 'd'; break;
+        case 0x23: c = 'f'; break; case 0x24: c = 'g'; break; case 0x25: c = 'h'; break;
+        case 0x26: c = 'j'; break; case 0x27: c = 'k'; break; case 0x28: c = 'l'; break;
+        case 0x31: c = 'z'; break; case 0x32: c = 'x'; break; case 0x33: c = 'c'; break;
+        case 0x34: c = 'v'; break; case 0x35: c = 'b'; break; case 0x36: c = 'n'; break;
+        case 0x37: c = 'm'; break;
     }
-    return 0;
+    if (shift && c >= 'a' && c <= 'z')
+        c = (char)(c - 'a' + 'A');
+    return c;
 }
 
-static void handle_key(struct MC4App *app, UWORD code)
+static void handle_key(struct MC4App *app, UWORD code, UWORD qualifier)
 {
     char c;
 
@@ -182,7 +209,7 @@ static void handle_key(struct MC4App *app, UWORD code)
         return;
     }
 
-    c = rawkey_to_char(code);
+    c = rawkey_to_char(code, qualifier);
     if (c && app->cfg.chat_enabled && app->chat_len < MC4_CHAT_LEN - 1) {
         app->chat_input[app->chat_len++] = c;
         app->chat_input[app->chat_len] = 0;
@@ -197,6 +224,7 @@ static void event_loop(struct MC4App *app)
     struct IntuiMessage *msg;
     ULONG classv;
     UWORD code;
+    UWORD qualifier;
     WORD mx, my;
     int col;
     int player;
@@ -210,6 +238,7 @@ static void event_loop(struct MC4App *app)
         while ((msg = (struct IntuiMessage *)GetMsg(app->win->UserPort))) {
             classv = msg->Class;
             code = msg->Code;
+            qualifier = msg->Qualifier;
             mx = app->win->GZZMouseX;
             my = app->win->GZZMouseY;
             ReplyMsg((struct Message *)msg);
@@ -240,7 +269,7 @@ static void event_loop(struct MC4App *app)
                         app_local_move(app, col, 1);
                 }
             } else if (classv == IDCMP_RAWKEY) {
-                handle_key(app, code);
+                handle_key(app, code, qualifier);
             } else if (classv == IDCMP_MENUPICK) {
                 if (code != MENUNULL)
                     do_menu(app, MENUNUM(code), ITEMNUM(code));
