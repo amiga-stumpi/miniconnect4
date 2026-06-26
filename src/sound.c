@@ -9,7 +9,7 @@
 
 #define SOUND_COUNT 5
 #define SOUND_PERIOD_8KHZ 447
-#define SOUND_VOLUME 48
+#define SOUND_VOLUME 64
 
 static struct MsgPort *g_audio_port;
 static struct IOAudio *g_audio_alloc_io;
@@ -158,15 +158,15 @@ void sound_shutdown(void)
     free_chip_samples();
 }
 
-void sound_play(int id)
+static int sound_prepare_write(int id)
 {
     if (!g_audio_open || !g_audio_write_io) {
         set_status("sound not open");
-        return;
+        return 0;
     }
     if (id < 0 || id >= SOUND_COUNT || !g_chip_data[id]) {
         set_status("sound bad id");
-        return;
+        return 0;
     }
 
     if (g_audio_busy) {
@@ -180,13 +180,39 @@ void sound_play(int id)
     }
 
     g_audio_write_io->ioa_Request.io_Command = CMD_WRITE;
-    g_audio_write_io->ioa_Request.io_Flags = 0;
+    g_audio_write_io->ioa_Request.io_Flags = ADIOF_PERVOL;
     g_audio_write_io->ioa_Data = (UBYTE *)g_chip_data[id];
     g_audio_write_io->ioa_Length = g_chip_len[id];
     g_audio_write_io->ioa_Period = SOUND_PERIOD_8KHZ;
     g_audio_write_io->ioa_Volume = SOUND_VOLUME;
     g_audio_write_io->ioa_Cycles = 1;
+    return 1;
+}
+
+void sound_play(int id)
+{
+    if (!sound_prepare_write(id))
+        return;
     SendIO((struct IORequest *)g_audio_write_io);
     g_audio_busy = 1;
     set_status("sound write sent");
+}
+
+const char *sound_test(void)
+{
+    if (!sound_prepare_write(MC4_SOUND_MOVE))
+        return sound_status();
+    DoIO((struct IORequest *)g_audio_write_io);
+    g_audio_busy = 0;
+    if (g_audio_write_io->ioa_Request.io_Error == 0)
+        set_status("sound test ok");
+    else if (g_audio_write_io->ioa_Request.io_Error == ADIOERR_NOALLOCATION)
+        set_status("sound err no allocation");
+    else if (g_audio_write_io->ioa_Request.io_Error == ADIOERR_ALLOCFAILED)
+        set_status("sound err alloc failed");
+    else if (g_audio_write_io->ioa_Request.io_Error == ADIOERR_CHANNELSTOLEN)
+        set_status("sound err channel stolen");
+    else
+        set_status("sound err other");
+    return sound_status();
 }
