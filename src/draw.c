@@ -125,7 +125,6 @@ void gui_draw_all(struct MC4App *app)
     if (!app->win)
         return;
     fill_rect(app->rp, 0, 0, app->win->Width - 1, app->win->Height - 1, PEN_BG);
-    draw_text(app->rp, 8, 11, MC4_NAME " v" MC4_VERSION, PEN_TEXT);
     draw_board(app);
     draw_buttons(app);
     gui_draw_status(app);

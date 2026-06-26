@@ -22,7 +22,7 @@ void gui_layout(struct MC4App *app)
 {
     WORD ww = app->win->Width;
     WORD wh = app->win->Height;
-    WORD top = 22;
+    WORD top = 8;
     WORD side = 100;
     WORD gap = 8;
     WORD avail_w = (WORD)(ww - side - gap - 16);
