@@ -39,7 +39,8 @@
 #define MC4_NETWORK_HOST 0
 #define MC4_NETWORK_JOIN 1
 #define MC4_NETWORK_DISCONNECT 2
-#define MC4_OPTIONS_CHAT 0
+#define MC4_OPTIONS_NAME 0
+#define MC4_OPTIONS_CHAT 1
 #define MC4_HELP_INFO 0
 
 struct MC4Config {
@@ -79,6 +80,7 @@ struct MC4App {
     WORD status_y;
     WORD chat_y;
     char status[128];
+    char remote_name[MC4_NAME_LEN + 1];
     char chat_lines[MC4_CHAT_LINES][MC4_CHAT_LEN];
     UBYTE chat_count;
     char chat_input[MC4_CHAT_LEN];
@@ -122,6 +124,7 @@ int gui_hit_column(struct MC4App *app, WORD x, WORD y);
 void gui_set_status(struct MC4App *app, const char *s);
 void gui_add_chat(struct MC4App *app, const char *s);
 void gui_info(struct MC4App *app);
+void gui_edit_player_name(struct MC4App *app);
 
 int net_init(void);
 void net_shutdown(void);

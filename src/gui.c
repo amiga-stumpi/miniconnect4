@@ -2,6 +2,7 @@
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <proto/dos.h>
+#include <string.h>
 #include "miniconnect4.h"
 
 static struct IntuiText txt_new = { 1, 0, JAM1, 0, 1, 0, (UBYTE *)"New Game", 0 };
@@ -9,6 +10,7 @@ static struct IntuiText txt_quit = { 1, 0, JAM1, 0, 1, 0, (UBYTE *)"Quit", 0 };
 static struct IntuiText txt_host = { 1, 0, JAM1, 0, 1, 0, (UBYTE *)"Host Game", 0 };
 static struct IntuiText txt_join = { 1, 0, JAM1, 0, 1, 0, (UBYTE *)"Join Game", 0 };
 static struct IntuiText txt_disconnect = { 1, 0, JAM1, 0, 1, 0, (UBYTE *)"Disconnect", 0 };
+static struct IntuiText txt_player_name = { 1, 0, JAM1, 0, 1, 0, (UBYTE *)"Player Name...", 0 };
 static struct IntuiText txt_chat = { 1, 0, JAM1, 0, 1, 0, (UBYTE *)"Toggle Chat", 0 };
 static struct IntuiText txt_info = { 1, 0, JAM1, 0, 1, 0, (UBYTE *)"Info", 0 };
 
@@ -17,11 +19,12 @@ static struct MenuItem item_project_new = { &item_project_quit, 0, 0, 92, 10, IT
 static struct MenuItem item_network_disconnect = { 0, 0, 20, 112, 10, ITEMTEXT | ITEMENABLED | HIGHBOX, 0, (APTR)&txt_disconnect, 0, 0, 0, 0 };
 static struct MenuItem item_network_join = { &item_network_disconnect, 0, 10, 112, 10, ITEMTEXT | ITEMENABLED | HIGHBOX, 0, (APTR)&txt_join, 0, 0, 0, 0 };
 static struct MenuItem item_network_host = { &item_network_join, 0, 0, 112, 10, ITEMTEXT | ITEMENABLED | HIGHBOX, 0, (APTR)&txt_host, 0, 0, 0, 0 };
-static struct MenuItem item_options_chat = { 0, 0, 0, 112, 10, ITEMTEXT | ITEMENABLED | HIGHBOX, 0, (APTR)&txt_chat, 0, 0, 0, 0 };
+static struct MenuItem item_options_chat = { 0, 0, 10, 112, 10, ITEMTEXT | ITEMENABLED | HIGHBOX, 0, (APTR)&txt_chat, 0, 0, 0, 0 };
+static struct MenuItem item_options_name = { &item_options_chat, 0, 0, 112, 10, ITEMTEXT | ITEMENABLED | HIGHBOX, 0, (APTR)&txt_player_name, 0, 0, 0, 0 };
 static struct MenuItem item_help_info = { 0, 0, 0, 60, 10, ITEMTEXT | ITEMENABLED | HIGHBOX, 0, (APTR)&txt_info, 0, 0, 0, 0 };
 
 static struct Menu menu_help = { 0, 196, 0, 16, 10, MENUENABLED, (UBYTE *)"?", &item_help_info, 0, 0, 0, 0 };
-static struct Menu menu_options = { &menu_help, 120, 0, 76, 10, MENUENABLED, (UBYTE *)"Options", &item_options_chat, 0, 0, 0, 0 };
+static struct Menu menu_options = { &menu_help, 120, 0, 76, 10, MENUENABLED, (UBYTE *)"Options", &item_options_name, 0, 0, 0, 0 };
 static struct Menu menu_network = { &menu_options, 54, 0, 66, 10, MENUENABLED, (UBYTE *)"Network", &item_network_host, 0, 0, 0, 0 };
 static struct Menu menu_project = { &menu_network, 0, 0, 54, 10, MENUENABLED, (UBYTE *)"Project", &item_project_new, 0, 0, 0, 0 };
 
@@ -227,6 +230,150 @@ void gui_add_chat(struct MC4App *app, const char *s)
         util_copy(app->chat_lines[MC4_CHAT_LINES - 1], MC4_CHAT_LEN, s);
     }
     gui_draw_chat(app);
+}
+
+static void gui_text(struct RastPort *rp, WORD x, WORD y, const char *s)
+{
+    SetAPen(rp, 1);
+    Move(rp, x, y);
+    Text(rp, (STRPTR)s, util_len(s));
+}
+
+static void gui_box(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2)
+{
+    SetAPen(rp, 1);
+    Move(rp, x1, y1);
+    Draw(rp, x2, y1);
+    Draw(rp, x2, y2);
+    Draw(rp, x1, y2);
+    Draw(rp, x1, y1);
+}
+
+void gui_edit_player_name(struct MC4App *app)
+{
+    struct NewWindow nw;
+    struct Window *w;
+    struct IntuiMessage *msg;
+    struct StringInfo si;
+    struct Gadget name_gad;
+    struct Gadget ok_gad;
+    struct Gadget cancel_gad;
+    struct IntuiText ok_text;
+    struct IntuiText cancel_text;
+    char buf[MC4_NAME_LEN + 1];
+    char undo[MC4_NAME_LEN + 1];
+    ULONG classv;
+    UWORD code;
+    int done = 0;
+    int accept = 0;
+
+    util_copy(buf, sizeof(buf), app->cfg.player_name);
+    undo[0] = 0;
+    memset(&si, 0, sizeof(si));
+    si.Buffer = (STRPTR)buf;
+    si.UndoBuffer = (STRPTR)undo;
+    si.MaxChars = sizeof(buf);
+
+    ok_text.FrontPen = 1; ok_text.BackPen = 0; ok_text.DrawMode = JAM1;
+    ok_text.LeftEdge = 12; ok_text.TopEdge = 4; ok_text.ITextFont = 0;
+    ok_text.IText = (UBYTE *)"OK"; ok_text.NextText = 0;
+    cancel_text.FrontPen = 1; cancel_text.BackPen = 0; cancel_text.DrawMode = JAM1;
+    cancel_text.LeftEdge = 8; cancel_text.TopEdge = 4; cancel_text.ITextFont = 0;
+    cancel_text.IText = (UBYTE *)"Cancel"; cancel_text.NextText = 0;
+
+    memset(&name_gad, 0, sizeof(name_gad));
+    memset(&ok_gad, 0, sizeof(ok_gad));
+    memset(&cancel_gad, 0, sizeof(cancel_gad));
+
+    name_gad.NextGadget = &ok_gad;
+    name_gad.LeftEdge = 16; name_gad.TopEdge = 32; name_gad.Width = 208; name_gad.Height = 12;
+    name_gad.Flags = GFLG_GADGHCOMP;
+    name_gad.Activation = GACT_RELVERIFY | GACT_STRINGLEFT;
+    name_gad.GadgetType = GTYP_STRGADGET;
+    name_gad.SpecialInfo = (APTR)&si;
+    name_gad.GadgetID = 1;
+
+    ok_gad.NextGadget = &cancel_gad;
+    ok_gad.LeftEdge = 42; ok_gad.TopEdge = 58; ok_gad.Width = 52; ok_gad.Height = 16;
+    ok_gad.Flags = GFLG_GADGHCOMP;
+    ok_gad.Activation = GACT_RELVERIFY;
+    ok_gad.GadgetType = GTYP_BOOLGADGET;
+    ok_gad.GadgetText = &ok_text;
+    ok_gad.GadgetID = 2;
+
+    cancel_gad.LeftEdge = 122; cancel_gad.TopEdge = 58; cancel_gad.Width = 76; cancel_gad.Height = 16;
+    cancel_gad.Flags = GFLG_GADGHCOMP;
+    cancel_gad.Activation = GACT_RELVERIFY;
+    cancel_gad.GadgetType = GTYP_BOOLGADGET;
+    cancel_gad.GadgetText = &cancel_text;
+    cancel_gad.GadgetID = 3;
+
+    memset(&nw, 0, sizeof(nw));
+    nw.LeftEdge = app->win ? (WORD)(app->win->LeftEdge + 24) : 24;
+    nw.TopEdge = app->win ? (WORD)(app->win->TopEdge + 24) : 24;
+    nw.Width = 240;
+    nw.Height = 88;
+    nw.DetailPen = 0;
+    nw.BlockPen = 1;
+    nw.IDCMPFlags = IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_RAWKEY;
+    nw.Flags = WFLG_CLOSEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_SMART_REFRESH | WFLG_ACTIVATE;
+    nw.FirstGadget = &name_gad;
+    nw.CheckMark = 0;
+    nw.Title = (UBYTE *)"Player Name";
+    nw.Screen = 0;
+    nw.BitMap = 0;
+    nw.MinWidth = 240;
+    nw.MinHeight = 88;
+    nw.MaxWidth = 240;
+    nw.MaxHeight = 88;
+    nw.Type = WBENCHSCREEN;
+
+    w = OpenWindow(&nw);
+    if (!w) {
+        gui_set_status(app, "Name window failed");
+        return;
+    }
+
+    SetAPen(w->RPort, 0);
+    RectFill(w->RPort, 0, 0, w->Width - 1, w->Height - 1);
+    gui_text(w->RPort, 16, 24, "Name:");
+    gui_box(w->RPort, 14, 30, 226, 46);
+    gui_box(w->RPort, 42, 58, 94, 74);
+    gui_box(w->RPort, 122, 58, 198, 74);
+    RefreshGList(&name_gad, w, 0, 3);
+    ActivateGadget(&name_gad, w, 0);
+
+    while (!done) {
+        Wait(1L << w->UserPort->mp_SigBit);
+        while ((msg = (struct IntuiMessage *)GetMsg(w->UserPort))) {
+            classv = msg->Class;
+            code = msg->Code;
+            if (classv == IDCMP_GADGETUP && msg->IAddress) {
+                struct Gadget *g = (struct Gadget *)msg->IAddress;
+                if (g->GadgetID == 2) {
+                    accept = 1;
+                    done = 1;
+                } else if (g->GadgetID == 3) {
+                    done = 1;
+                }
+            } else if (classv == IDCMP_CLOSEWINDOW) {
+                done = 1;
+            } else if (classv == IDCMP_RAWKEY && code == 0x44) {
+                accept = 1;
+                done = 1;
+            }
+            ReplyMsg((struct Message *)msg);
+        }
+    }
+
+    if (accept) {
+        if (!buf[0])
+            util_copy(buf, sizeof(buf), "Player");
+        util_copy(app->cfg.player_name, sizeof(app->cfg.player_name), buf);
+        config_save(&app->cfg);
+        gui_set_status(app, "Player name saved");
+    }
+    CloseWindow(w);
 }
 
 void gui_info(struct MC4App *app)

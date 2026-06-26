@@ -72,6 +72,15 @@ static int send_line(const char *line)
     return send(g_fd, out, len, 0) == len;
 }
 
+
+static void send_name(struct MC4App *app)
+{
+    char line[NET_BUF];
+    util_copy(line, sizeof(line), "NAME ");
+    util_append(line, sizeof(line), app->cfg.player_name[0] ? app->cfg.player_name : "Player");
+    send_line(line);
+}
+
 int net_host(struct MC4App *app)
 {
     struct sockaddr_in sa;
@@ -138,6 +147,7 @@ int net_connect(struct MC4App *app, const char *host, UWORD port)
     app->game.local_player = MC4_P2;
     app->my_turn = 0;
     send_line("HELLO MiniConnect4");
+    send_name(app);
     gui_set_status(app, "Connected: remote turn");
     return 1;
 }
@@ -174,6 +184,7 @@ void net_poll(struct MC4App *app)
             app->game.local_player = MC4_P1;
             app->my_turn = 1;
             send_line("HELLO MiniConnect4");
+            send_name(app);
             gui_set_status(app, "Connected: your turn");
         }
     }

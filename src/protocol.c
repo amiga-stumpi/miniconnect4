@@ -10,6 +10,13 @@ void protocol_handle_line(struct MC4App *app, const char *line)
         gui_set_status(app, "Connected");
         return;
     }
+    if (util_starts(line, "NAME ")) {
+        util_copy(app->remote_name, sizeof(app->remote_name), line + 5);
+        util_copy(msg, sizeof(msg), "Remote player: ");
+        util_append(msg, sizeof(msg), app->remote_name);
+        gui_add_chat(app, msg);
+        return;
+    }
     if (util_starts(line, "MOVE ")) {
         col = line[5] - '0';
         if (col >= 0 && col < MC4_COLS) {
