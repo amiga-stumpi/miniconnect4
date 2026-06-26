@@ -12,15 +12,23 @@ static struct IntuiText txt_disconnect = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Discon
 static struct IntuiText txt_player_name = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Player Name...", 0 };
 static struct IntuiText txt_chat = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Toggle Chat", 0 };
 static struct IntuiText txt_colors = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Farben...", 0 };
+static struct IntuiText txt_human = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Mensch gegen Mensch", 0 };
+static struct IntuiText txt_ai_easy = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Computer Einfach", 0 };
+static struct IntuiText txt_ai_medium = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Computer Mittel", 0 };
+static struct IntuiText txt_ai_hard = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Computer Schwer", 0 };
 static struct IntuiText txt_info = { 0, 1, JAM1, 0, 1, 0, (UBYTE *)"Info", 0 };
 
 static struct MenuItem item_project_quit = { 0, 0, 10, 92, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_quit, 0, 0, 0, 0 };
 static struct MenuItem item_project_new = { &item_project_quit, 0, 0, 92, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_new, 0, 0, 0, 0 };
 static struct MenuItem item_network_disconnect = { 0, 0, 10, 112, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_disconnect, 0, 0, 0, 0 };
 static struct MenuItem item_network_lobby = { &item_network_disconnect, 0, 0, 112, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_lobby, 0, 0, 0, 0 };
-static struct MenuItem item_options_colors = { 0, 0, 20, 112, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_colors, 0, 0, 0, 0 };
-static struct MenuItem item_options_chat = { &item_options_colors, 0, 10, 112, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_chat, 0, 0, 0, 0 };
-static struct MenuItem item_options_name = { &item_options_chat, 0, 0, 112, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_player_name, 0, 0, 0, 0 };
+static struct MenuItem item_options_ai_hard = { 0, 0, 60, 150, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_ai_hard, 0, 0, 0, 0 };
+static struct MenuItem item_options_ai_medium = { &item_options_ai_hard, 0, 50, 150, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_ai_medium, 0, 0, 0, 0 };
+static struct MenuItem item_options_ai_easy = { &item_options_ai_medium, 0, 40, 150, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_ai_easy, 0, 0, 0, 0 };
+static struct MenuItem item_options_human = { &item_options_ai_easy, 0, 30, 150, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_human, 0, 0, 0, 0 };
+static struct MenuItem item_options_colors = { &item_options_human, 0, 20, 150, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_colors, 0, 0, 0, 0 };
+static struct MenuItem item_options_chat = { &item_options_colors, 0, 10, 150, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_chat, 0, 0, 0, 0 };
+static struct MenuItem item_options_name = { &item_options_chat, 0, 0, 150, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_player_name, 0, 0, 0, 0 };
 static struct MenuItem item_help_info = { 0, 0, 0, 60, 10, ITEMTEXT | ITEMENABLED | HIGHCOMP, 0, (APTR)&txt_info, 0, 0, 0, 0 };
 
 static struct Menu menu_help = { 0, 196, 0, 16, 10, MENUENABLED, (UBYTE *)"?", &item_help_info, 0, 0, 0, 0 };

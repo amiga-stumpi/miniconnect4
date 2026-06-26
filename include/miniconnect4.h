@@ -44,10 +44,18 @@
 #define MC4_OPTIONS_NAME 0
 #define MC4_OPTIONS_CHAT 1
 #define MC4_OPTIONS_COLORS 2
+#define MC4_OPTIONS_HUMAN 3
+#define MC4_OPTIONS_AI_EASY 4
+#define MC4_OPTIONS_AI_MEDIUM 5
+#define MC4_OPTIONS_AI_HARD 6
 #define MC4_HELP_INFO 0
 
 #define MC4_VIEW_GAME 0
 #define MC4_VIEW_LOBBY 1
+
+#define MC4_AI_EASY 1
+#define MC4_AI_MEDIUM 2
+#define MC4_AI_HARD 3
 
 struct MC4Config {
     WORD win_x;
@@ -64,6 +72,8 @@ struct MC4Config {
     UBYTE pen_board;
     UBYTE pen_p1;
     UBYTE pen_p2;
+    UBYTE vs_computer;
+    UBYTE ai_level;
 };
 
 struct MC4Game {
@@ -171,5 +181,6 @@ int net_send_decline(struct MC4App *app, const char *name);
 void protocol_handle_line(struct MC4App *app, const char *line);
 void app_new_game(struct MC4App *app);
 void app_local_move(struct MC4App *app, int col, int send_net);
+int ai_choose_move(const struct MC4Game *game, UBYTE player, UBYTE level);
 
 #endif

@@ -18,6 +18,9 @@ ULONG __stack = 32000;
 
 extern void chat_submit(struct MC4App *app);
 
+static void app_update_local_status(struct MC4App *app);
+static void app_maybe_computer_move(struct MC4App *app);
+
 static void clear_invite_pending(struct MC4App *app)
 {
     app->invite_pending = 0;
@@ -50,6 +53,16 @@ static int is_default_lobby(const char *s)
     return s[i] == 0;
 }
 
+static void app_update_local_status(struct MC4App *app)
+{
+    if (app->net_state == MC4_NET_CONNECTED)
+        util_copy(app->status, sizeof(app->status), app->my_turn ? "Your turn" : "Remote turn");
+    else if (app->cfg.vs_computer)
+        util_copy(app->status, sizeof(app->status), app->game.current_player == MC4_P1 ? "Your turn" : "Computer turn");
+    else
+        util_copy(app->status, sizeof(app->status), app->game.current_player == MC4_P1 ? "Player 1 turn" : "Player 2 turn");
+}
+
 void app_new_game(struct MC4App *app)
 {
     UBYTE local = app->game.local_player;
@@ -57,9 +70,25 @@ void app_new_game(struct MC4App *app)
     game_init(&app->game);
     app->game.local_player = local ? local : MC4_P1;
     app->my_turn = (app->net_state != MC4_NET_CONNECTED || app->game.local_player == MC4_P1) ? 1 : 0;
-    util_copy(app->status, sizeof(app->status), app->my_turn ? "Your turn" : "Remote turn");
+    app_update_local_status(app);
     gui_layout(app);
     gui_draw_all(app);
+    app_maybe_computer_move(app);
+}
+
+static void app_maybe_computer_move(struct MC4App *app)
+{
+    int col;
+
+    if (app->net_state == MC4_NET_CONNECTED || !app->cfg.vs_computer || app->game.game_over)
+        return;
+    if (app->game.current_player != MC4_P2)
+        return;
+    gui_set_status(app, "Computer denkt...");
+    Delay(8);
+    col = ai_choose_move(&app->game, MC4_P2, app->cfg.ai_level);
+    if (col >= 0)
+        app_local_move(app, col, 0);
 }
 
 void app_local_move(struct MC4App *app, int col, int send_net)
@@ -113,11 +142,14 @@ void app_local_move(struct MC4App *app, int col, int send_net)
                 app->my_turn = 1;
                 gui_set_status(app, "Your turn");
             } else {
-                gui_set_status(app, "Local game");
+                app_update_local_status(app);
+                gui_draw_status(app);
             }
         }
     }
     gui_draw_status(app);
+    if (!app->game.game_over && send_net && app->net_state != MC4_NET_CONNECTED)
+        app_maybe_computer_move(app);
 }
 
 static void do_menu(struct MC4App *app, UWORD menu, UWORD item)
@@ -150,6 +182,27 @@ static void do_menu(struct MC4App *app, UWORD menu, UWORD item)
             gui_draw_all(app);
         } else if (item == MC4_OPTIONS_COLORS) {
             gui_edit_colors(app);
+        } else if (item == MC4_OPTIONS_HUMAN) {
+            net_close(app);
+            app->view = MC4_VIEW_GAME;
+            app->cfg.vs_computer = 0;
+            config_save(&app->cfg);
+            app_new_game(app);
+            gui_set_status(app, "Mensch gegen Mensch");
+        } else if (item == MC4_OPTIONS_AI_EASY || item == MC4_OPTIONS_AI_MEDIUM || item == MC4_OPTIONS_AI_HARD) {
+            net_close(app);
+            app->view = MC4_VIEW_GAME;
+            app->cfg.vs_computer = 1;
+            app->cfg.ai_level = (item == MC4_OPTIONS_AI_EASY) ? MC4_AI_EASY :
+                                (item == MC4_OPTIONS_AI_MEDIUM) ? MC4_AI_MEDIUM : MC4_AI_HARD;
+            config_save(&app->cfg);
+            app_new_game(app);
+            if (app->cfg.ai_level == MC4_AI_EASY)
+                gui_set_status(app, "Computer: Einfach");
+            else if (app->cfg.ai_level == MC4_AI_MEDIUM)
+                gui_set_status(app, "Computer: Mittel");
+            else
+                gui_set_status(app, "Computer: Schwer");
         }
     } else if (menu == MC4_MENU_HELP) {
         if (item == MC4_HELP_INFO)

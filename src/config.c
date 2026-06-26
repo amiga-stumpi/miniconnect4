@@ -66,6 +66,8 @@ void config_defaults(struct MC4Config *cfg)
     cfg->pen_board = 1;
     cfg->pen_p1 = 2;
     cfg->pen_p2 = 3;
+    cfg->vs_computer = 0;
+    cfg->ai_level = MC4_AI_EASY;
 }
 
 static int read_line(BPTR f, char *line, int max_len)
@@ -125,11 +127,16 @@ void config_load(struct MC4Config *cfg)
         else if (!strcmp(line, "pen_board")) cfg->pen_board = (UBYTE)parse_int(eq, cfg->pen_board);
         else if (!strcmp(line, "pen_p1")) cfg->pen_p1 = (UBYTE)parse_int(eq, cfg->pen_p1);
         else if (!strcmp(line, "pen_p2")) cfg->pen_p2 = (UBYTE)parse_int(eq, cfg->pen_p2);
+        else if (!strcmp(line, "vs_computer")) cfg->vs_computer = (UBYTE)parse_int(eq, cfg->vs_computer);
+        else if (!strcmp(line, "ai_level")) cfg->ai_level = (UBYTE)parse_int(eq, cfg->ai_level);
     }
     Close(f);
     if (!cfg->player_name[0] || is_plain_player_name(cfg->player_name))
         config_make_default_name(cfg->player_name, sizeof(cfg->player_name));
     cfg->chat_enabled = 1;
+    if (cfg->ai_level < MC4_AI_EASY || cfg->ai_level > MC4_AI_HARD)
+        cfg->ai_level = MC4_AI_EASY;
+    cfg->vs_computer = cfg->vs_computer ? 1 : 0;
     if (cfg->pen_bg == cfg->pen_text || cfg->pen_bg == cfg->pen_board ||
         cfg->pen_bg == cfg->pen_p1 || cfg->pen_bg == cfg->pen_p2) {
         UBYTE p;
@@ -172,5 +179,7 @@ void config_save(const struct MC4Config *cfg)
     util_num(n, sizeof(n), cfg->pen_board); write_line(f, "pen_board", n);
     util_num(n, sizeof(n), cfg->pen_p1); write_line(f, "pen_p1", n);
     util_num(n, sizeof(n), cfg->pen_p2); write_line(f, "pen_p2", n);
+    util_num(n, sizeof(n), cfg->vs_computer); write_line(f, "vs_computer", n);
+    util_num(n, sizeof(n), cfg->ai_level); write_line(f, "ai_level", n);
     Close(f);
 }
