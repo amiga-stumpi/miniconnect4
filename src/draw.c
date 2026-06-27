@@ -150,6 +150,28 @@ void gui_draw_all(struct MC4App *app)
     gui_draw_chat(app);
 }
 
+void gui_blink_winner(struct MC4App *app)
+{
+    WORD rows[4];
+    WORD cols[4];
+    UBYTE vals[4];
+    int i, pass;
+
+    if (!game_winning_cells(&app->game, rows, cols))
+        return;
+    for (i = 0; i < 4; ++i)
+        vals[i] = app->game.board[rows[i]][cols[i]];
+
+    for (pass = 0; pass < 3; ++pass) {
+        for (i = 0; i < 4; ++i)
+            gui_draw_cell(app, rows[i], cols[i], MC4_EMPTY);
+        Delay(3);
+        for (i = 0; i < 4; ++i)
+            gui_draw_cell(app, rows[i], cols[i], vals[i]);
+        Delay(3);
+    }
+}
+
 void gui_animate_drop(struct MC4App *app, int col, int row, UBYTE player)
 {
     int step;

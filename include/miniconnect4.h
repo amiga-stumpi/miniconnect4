@@ -177,6 +177,7 @@ void game_init(struct MC4Game *g);
 int game_can_play(const struct MC4Game *g, int col);
 int game_drop(struct MC4Game *g, int col, UBYTE player, WORD *row_out);
 int game_check_winner(struct MC4Game *g, int row, int col);
+int game_winning_cells(const struct MC4Game *g, WORD rows[4], WORD cols[4]);
 void game_switch_player(struct MC4Game *g);
 
 int gui_open(struct MC4App *app);
@@ -189,6 +190,7 @@ void gui_draw_chat(struct MC4App *app);
 void gui_draw_lobby(struct MC4App *app);
 void gui_draw_cell(struct MC4App *app, int row, int col, UBYTE value);
 void gui_animate_drop(struct MC4App *app, int col, int row, UBYTE player);
+void gui_blink_winner(struct MC4App *app);
 int gui_hit_column(struct MC4App *app, WORD x, WORD y);
 int gui_hit_lobby_player(struct MC4App *app, WORD x, WORD y);
 void gui_set_status(struct MC4App *app, const char *s);

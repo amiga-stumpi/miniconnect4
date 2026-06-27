@@ -77,6 +77,59 @@ int game_check_winner(struct MC4Game *g, int row, int col)
     return 0;
 }
 
+int game_winning_cells(const struct MC4Game *g, WORD rows[4], WORD cols[4])
+{
+    int dirs[4][2] = {{0,1},{1,0},{1,1},{1,-1}};
+    int line_r[MC4_COLS > MC4_ROWS ? MC4_COLS : MC4_ROWS];
+    int line_c[MC4_COLS > MC4_ROWS ? MC4_COLS : MC4_ROWS];
+    int i, n, r, c, dr, dc, start, k;
+    UBYTE p;
+
+    if (!g || g->last_row < 0 || g->last_col < 0)
+        return 0;
+    p = g->board[g->last_row][g->last_col];
+    if (p == MC4_EMPTY)
+        return 0;
+
+    for (i = 0; i < 4; ++i) {
+        dr = dirs[i][0];
+        dc = dirs[i][1];
+        r = g->last_row;
+        c = g->last_col;
+        while (r - dr >= 0 && r - dr < MC4_ROWS && c - dc >= 0 && c - dc < MC4_COLS &&
+               g->board[r - dr][c - dc] == p) {
+            r -= dr;
+            c -= dc;
+        }
+        n = 0;
+        while (r >= 0 && r < MC4_ROWS && c >= 0 && c < MC4_COLS && g->board[r][c] == p && n < (int)(sizeof(line_r) / sizeof(line_r[0]))) {
+            line_r[n] = r;
+            line_c[n] = c;
+            ++n;
+            r += dr;
+            c += dc;
+        }
+        if (n >= 4) {
+            start = 0;
+            for (k = 0; k < n; ++k) {
+                if (line_r[k] == g->last_row && line_c[k] == g->last_col) {
+                    if (k > 3)
+                        start = k - 3;
+                    if (start + 4 > n)
+                        start = n - 4;
+                    break;
+                }
+            }
+            for (k = 0; k < 4; ++k) {
+                rows[k] = (WORD)line_r[start + k];
+                cols[k] = (WORD)line_c[start + k];
+            }
+            return 1;
+        }
+    }
+    return 0;
+}
+
 void game_switch_player(struct MC4Game *g)
 {
     g->current_player = (g->current_player == MC4_P1) ? MC4_P2 : MC4_P1;

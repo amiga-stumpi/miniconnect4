@@ -132,6 +132,7 @@ void app_local_move(struct MC4App *app, int col, int send_net)
         sent_net = 1;
     }
     if (game_check_winner(&app->game, row, col)) {
+        gui_blink_winner(app);
         if (app->net_state == MC4_NET_CONNECTED) {
             if (player == app->game.local_player) {
                 gui_set_status(app, tr(&app->cfg, MC4_TX_YOU_WON));
