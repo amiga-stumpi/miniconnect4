@@ -16,6 +16,7 @@
 #define NAME_LEN 31
 #define BUF_LEN 512
 #define DEFAULT_PORT 4544
+#define SERVER_VERSION "1.0"
 
 struct Client {
     int fd;
@@ -320,7 +321,7 @@ static void handle_line(int idx, char *line)
 {
     int target;
     if (strncmp(line, "HELLO ", 6) == 0) {
-        send_line(clients[idx].fd, "HELLO MiniConnect4Lobby");
+        send_line(clients[idx].fd, "HELLO MiniConnect4Lobby 1.0");
     } else if (strncmp(line, "NAME ", 5) == 0) {
         char wanted[NAME_LEN + 1];
         char reply[BUF_LEN];
@@ -412,7 +413,7 @@ int main(int argc, char **argv)
         if (strcmp(argv[argi], "-D") == 0)
             daemon_mode = 1;
         else if (strcmp(argv[argi], "-h") == 0 || strcmp(argv[argi], "--help") == 0) {
-            printf("usage: %s [-D] [port]\n", argv[0]);
+            printf("MiniConnect4 lobby server v%s\nusage: %s [-D] [port]\n", SERVER_VERSION, argv[0]);
             return 0;
         } else
             port = atoi(argv[argi]);
@@ -455,7 +456,7 @@ int main(int argc, char **argv)
         return 1;
     }
     if (!daemon_mode)
-        printf("MiniConnect4 lobby server listening on port %d\n", port);
+        printf("MiniConnect4 lobby server v%s listening on port %d\n", SERVER_VERSION, port);
 
     for (;;) {
         FD_ZERO(&rfds);
@@ -489,7 +490,7 @@ int main(int argc, char **argv)
                 clients[idx].rematch = -1;
                 clients[idx].role = 0;
                 clients[idx].rematch_starter = 0;
-                send_line(fd, "HELLO MiniConnect4Lobby");
+                send_line(fd, "HELLO MiniConnect4Lobby 1.0");
             } else if (fd >= 0) {
                 send_line(fd, "LOBBYCHAT Server: lobby full");
                 close(fd);

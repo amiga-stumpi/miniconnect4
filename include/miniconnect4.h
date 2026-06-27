@@ -5,7 +5,7 @@
 #include <intuition/intuition.h>
 #include <graphics/rastport.h>
 
-#define MC4_VERSION "0.1"
+#define MC4_VERSION "1.0"
 #define MC4_NAME "MiniConnect4"
 
 #define MC4_COLS 7

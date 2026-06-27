@@ -74,7 +74,7 @@ static const char *const texts[][3] = {
     { "Play rematch?", "Revanche spielen?", "Rewanz?" },
     { "Waiting for rematch answer", "Warte auf Revanche-Antwort", "Czekam na rewanz" },
     { "Back to lobby", "Zurueck in die Lobby", "Powrot do lobby" },
-    { "MiniConnect4\nOnline Connect Four for AmigaOS 1.3\nMarcel Jaehne (c)2026", "MiniConnect4\nOnline 4 Gewinnt fuer AmigaOS 1.3\nMarcel Jaehne (c)2026", "MiniConnect4\nSieciowe Cztery w rzedzie dla AmigaOS 1.3\nMarcel Jaehne (c)2026" },
+    { "MiniConnect4 v1.0\nOnline Connect Four for AmigaOS 1.3\nMarcel Jaehne (c)2026", "MiniConnect4 v1.0\nOnline 4 Gewinnt fuer AmigaOS 1.3\nMarcel Jaehne (c)2026", "MiniConnect4 v1.0\nSieciowe Cztery w rzedzie dla AmigaOS 1.3\nMarcel Jaehne (c)2026" },
     { "MiniConnect4: window open failed\n", "MiniConnect4: Fenster konnte nicht geoeffnet werden\n", "MiniConnect4: nie mozna otworzyc okna\n" }
 };
 
